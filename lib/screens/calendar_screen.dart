@@ -28,16 +28,27 @@ class CalendarScreen extends StatelessWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E1C3B)),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Color(0xFF1E1C3B),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
                   Text(
                     'Calendar',
-                    style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF1E1C3B)),
+                    style: GoogleFonts.nunito(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF1E1C3B),
+                    ),
                   ),
                 ],
               ),
@@ -45,7 +56,10 @@ class CalendarScreen extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 child: const MonthlyStreakCalendar(),
               ),
             ],

@@ -60,7 +60,7 @@ class UsernameChangeStatus {
   String get message => canChange
       ? 'You can change your username now.'
       : 'Username can be changed again in $daysRemaining '
-      '${daysRemaining == 1 ? 'day' : 'days'}.';
+            '${daysRemaining == 1 ? 'day' : 'days'}.';
 }
 
 /// Global singleton. Listen to it with [AnimatedBuilder] or
@@ -101,7 +101,9 @@ class ProfileStore extends ChangeNotifier {
     try {
       final result = await _supabase.rpc('get_my_profile');
       if (result != null) {
-        _profile = UserProfile.fromMap(Map<String, dynamic>.from(result as Map));
+        _profile = UserProfile.fromMap(
+          Map<String, dynamic>.from(result as Map),
+        );
       }
     } catch (_) {
       // leave the previous profile in place rather than blanking the UI
@@ -142,7 +144,9 @@ class ProfileStore extends ChangeNotifier {
     try {
       final result = await _supabase.rpc('get_my_profile');
       if (result != null) {
-        _profile = UserProfile.fromMap(Map<String, dynamic>.from(result as Map));
+        _profile = UserProfile.fromMap(
+          Map<String, dynamic>.from(result as Map),
+        );
         notifyListeners();
       }
     } catch (_) {
@@ -186,22 +190,27 @@ class ProfileStore extends ChangeNotifier {
     String? motivation,
   }) async {
     try {
-      final result = await _supabase.rpc('update_my_profile', params: {
-        'p_full_name': fullName,
-        'p_username': username,
-        'p_birthday': birthday == null
-            ? null
-            : '${birthday.year.toString().padLeft(4, '0')}-'
-            '${birthday.month.toString().padLeft(2, '0')}-'
-            '${birthday.day.toString().padLeft(2, '0')}',
-        'p_avatar': avatarPath,
-        'p_about': about,
-        'p_goals': goals,
-        'p_motivation': motivation,
-      });
+      final result = await _supabase.rpc(
+        'update_my_profile',
+        params: {
+          'p_full_name': fullName,
+          'p_username': username,
+          'p_birthday': birthday == null
+              ? null
+              : '${birthday.year.toString().padLeft(4, '0')}-'
+                    '${birthday.month.toString().padLeft(2, '0')}-'
+                    '${birthday.day.toString().padLeft(2, '0')}',
+          'p_avatar': avatarPath,
+          'p_about': about,
+          'p_goals': goals,
+          'p_motivation': motivation,
+        },
+      );
 
       if (result != null) {
-        _profile = UserProfile.fromMap(Map<String, dynamic>.from(result as Map));
+        _profile = UserProfile.fromMap(
+          Map<String, dynamic>.from(result as Map),
+        );
         notifyListeners();
       }
     } on PostgrestException catch (e) {
@@ -272,9 +281,12 @@ class UserAvatar extends StatelessWidget {
   });
 
   /// The signed-in user's avatar, live-updating.
-  const UserAvatar.me({super.key, this.size = 44, this.background = const Color(0xFFEDEBFB)})
-      : avatarPath = null,
-        isCurrentUser = true;
+  const UserAvatar.me({
+    super.key,
+    this.size = 44,
+    this.background = const Color(0xFFEDEBFB),
+  }) : avatarPath = null,
+       isCurrentUser = true;
 
   @override
   Widget build(BuildContext context) {
@@ -294,14 +306,20 @@ class UserAvatar extends StatelessWidget {
         height: size,
         color: background,
         child: (path == null || path.isEmpty)
-            ? Icon(Icons.person_rounded,
-            color: const Color(0xFF6C5DD3), size: size * 0.58)
+            ? Icon(
+                Icons.person_rounded,
+                color: const Color(0xFF6C5DD3),
+                size: size * 0.58,
+              )
             : Image.asset(
-          path,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Icon(Icons.person_rounded,
-              color: const Color(0xFF6C5DD3), size: size * 0.58),
-        ),
+                path,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.person_rounded,
+                  color: const Color(0xFF6C5DD3),
+                  size: size * 0.58,
+                ),
+              ),
       ),
     );
   }

@@ -11,7 +11,8 @@ class JournalScreenContent extends StatefulWidget {
   State<JournalScreenContent> createState() => JournalScreenContentState(); // was _JournalScreenContentState()
 }
 
-class JournalScreenContentState extends State<JournalScreenContent> { // was _JournalScreenContentState, now public
+class JournalScreenContentState extends State<JournalScreenContent> {
+  // was _JournalScreenContentState, now public
   final _entry = TextEditingController();
   final _entryFocus = FocusNode(); // NEW
   final _service = JournalService();
@@ -57,9 +58,9 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load entry: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load entry: $e')));
       }
     }
   }
@@ -95,22 +96,35 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
       );
       if (mounted) {
         setState(() => _currentEntry = saved);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Journal saved!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Journal saved!')));
         _loadInsights();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
 
   String _formatDate(DateTime d) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${d.day} ${months[d.month - 1]}, ${d.year}';
   }
 
@@ -118,17 +132,30 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.menu_book_rounded, color: AppColors.purple),
-              title: Text('View All Entries', style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+              leading: const Icon(
+                Icons.menu_book_rounded,
+                color: AppColors.purple,
+              ),
+              title: Text(
+                'View All Entries',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const JournalEntriesScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const JournalEntriesScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -139,7 +166,8 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
 
   @override
   Widget build(BuildContext context) {
-    final isToday = _selectedDate.year == DateTime.now().year &&
+    final isToday =
+        _selectedDate.year == DateTime.now().year &&
         _selectedDate.month == DateTime.now().month &&
         _selectedDate.day == DateTime.now().day;
 
@@ -148,7 +176,14 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
       children: [
         const AppTopBar(),
         const SizedBox(height: 18),
-        Text('Journal', style: GoogleFonts.schoolbell(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.ink)),
+        Text(
+          'Journal',
+          style: GoogleFonts.schoolbell(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: AppColors.ink,
+          ),
+        ),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),
@@ -160,24 +195,51 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.purple),
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 18,
+                        color: AppColors.purple,
+                      ),
                       const SizedBox(width: 10),
                       Text(
-                        isToday ? '${_formatDate(_selectedDate)} (Today)' : _formatDate(_selectedDate),
-                        style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.ink),
+                        isToday
+                            ? '${_formatDate(_selectedDate)} (Today)'
+                            : _formatDate(_selectedDate),
+                        style: GoogleFonts.nunito(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ],
                   ),
                   GestureDetector(
                     onTap: _pickDate,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFFEDEBFB), borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDEBFB),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_month_rounded, size: 14, color: AppColors.purple),
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            size: 14,
+                            color: AppColors.purple,
+                          ),
                           const SizedBox(width: 4),
-                          Text('View Calendar', style: GoogleFonts.nunito(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.purple)),
+                          Text(
+                            'View Calendar',
+                            style: GoogleFonts.nunito(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.purple,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -202,7 +264,10 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                     controller: _entry,
                     focusNode: _entryFocus, // NEW
                     maxLines: null,
-                    style: GoogleFonts.nunito(fontSize: 14, color: AppColors.ink),
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      color: AppColors.ink,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'How was your day?',
                       hintStyle: GoogleFonts.nunito(color: AppColors.sub),
@@ -217,13 +282,28 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                     child: OutlinedButton.icon(
                       onPressed: () {},
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.purple.withOpacity(0.3)),
+                        side: BorderSide(
+                          color: AppColors.purple.withValues(alpha: 0.3),
+                        ),
                         backgroundColor: const Color(0xFFF6F2FF),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                      icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.purple),
-                      label: Text('AI Suggestion', style: GoogleFonts.nunito(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppColors.purple)),
+                      icon: const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 16,
+                        color: AppColors.purple,
+                      ),
+                      label: Text(
+                        'AI Suggestion',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.purple,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -231,13 +311,28 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                     child: OutlinedButton.icon(
                       onPressed: _saveJournal,
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.purple.withOpacity(0.3)),
+                        side: BorderSide(
+                          color: AppColors.purple.withValues(alpha: 0.3),
+                        ),
                         backgroundColor: const Color(0xFFF6F2FF),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                      icon: const Icon(Icons.favorite_border_rounded, size: 16, color: AppColors.purple),
-                      label: Text('Save Journal', style: GoogleFonts.nunito(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppColors.purple)),
+                      icon: const Icon(
+                        Icons.favorite_border_rounded,
+                        size: 16,
+                        color: AppColors.purple,
+                      ),
+                      label: Text(
+                        'Save Journal',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.purple,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -257,14 +352,28 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.sentiment_satisfied_rounded, size: 18, color: AppColors.ink),
+                      const Icon(
+                        Icons.sentiment_satisfied_rounded,
+                        size: 18,
+                        color: AppColors.ink,
+                      ),
                       const SizedBox(width: 8),
-                      Text("Yesterday's Insights", style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                      Text(
+                        "Yesterday's Insights",
+                        style: GoogleFonts.nunito(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
+                      ),
                     ],
                   ),
                   GestureDetector(
                     onTap: _openInsightsMenu,
-                    child: const Icon(Icons.more_horiz_rounded, color: AppColors.purple),
+                    child: const Icon(
+                      Icons.more_horiz_rounded,
+                      color: AppColors.purple,
+                    ),
                   ),
                 ],
               ),
@@ -283,12 +392,23 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                         children: [
                           Row(
                             children: [
-                              Text('Latest entry', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                              Text(
+                                'Latest entry',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.ink,
+                                ),
+                              ),
                               if (_latestEntry != null) ...[
                                 const SizedBox(width: 8),
                                 Text(
                                   _formatDate(_latestEntry!.day),
-                                  style: GoogleFonts.nunito(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.purple),
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.purple,
+                                  ),
                                 ),
                               ],
                             ],
@@ -300,7 +420,11 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                                 : _latestEntry!.entryText.isEmpty
                                 ? '(empty entry)'
                                 : _latestEntry!.entryText,
-                            style: GoogleFonts.nunito(fontSize: 11.5, color: AppColors.sub, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.nunito(
+                              fontSize: 11.5,
+                              color: AppColors.sub,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -309,8 +433,15 @@ class JournalScreenContentState extends State<JournalScreenContent> { // was _Jo
                     Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(color: const Color(0xFFEDEBFB), borderRadius: BorderRadius.circular(10)),
-                      child: const Icon(Icons.menu_book_rounded, color: AppColors.purple, size: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDEBFB),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.menu_book_rounded,
+                        color: AppColors.purple,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),

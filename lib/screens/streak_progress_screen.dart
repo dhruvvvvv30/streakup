@@ -25,7 +25,11 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
     setState(() => _loading = true);
     try {
       final stats = await _streakService.fetchStats();
-      if (mounted) setState(() { _stats = stats; _loading = false; });
+      if (mounted)
+        setState(() {
+          _stats = stats;
+          _loading = false;
+        });
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -42,41 +46,68 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
       backgroundColor: const Color(0xFFF7F6FF),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColorsSP.purple))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColorsSP.purple),
+              )
             : RefreshIndicator(
-          onRefresh: _loadStats,
-          color: AppColorsSP.purple,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopBar(context),
-                const SizedBox(height: 16),
-                _buildProfileXpRow(_stats!),
-                const SizedBox(height: 16),
-                _streakBannerRow(_stats!),
-                const SizedBox(height: 16),
-                _sectionCard(
-                  title: 'Streak Overview',
-                  child: _statsRow([
-                    _StatItem(Icons.local_fire_department_rounded, AppColorsSP.purple, '${_stats!.currentStreak}', 'Current Streak'),
-                    _StatItem(Icons.emoji_events_rounded, const Color(0xFF3E9AE8), '${_stats!.longestStreak}', 'Longest Streak'),
-                    _StatItem(Icons.event_available_rounded, const Color(0xFFE85878), '${_stats!.successRate.round()}%', 'Success Rate'),
-                    _StatItem(Icons.check_circle_rounded, const Color(0xFF4CAF7D), '${_stats!.daysThisMonth}', 'Days This Month'),
-                    _StatItem(Icons.star_rounded, const Color(0xFFB48CEA), '${_stats!.totalXp}', 'Total XP'),
-                  ]),
+                onRefresh: _loadStats,
+                color: AppColorsSP.purple,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTopBar(context),
+                      const SizedBox(height: 16),
+                      _buildProfileXpRow(_stats!),
+                      const SizedBox(height: 16),
+                      _streakBannerRow(_stats!),
+                      const SizedBox(height: 16),
+                      _sectionCard(
+                        title: 'Streak Overview',
+                        child: _statsRow([
+                          _StatItem(
+                            Icons.local_fire_department_rounded,
+                            AppColorsSP.purple,
+                            '${_stats!.currentStreak}',
+                            'Current Streak',
+                          ),
+                          _StatItem(
+                            Icons.emoji_events_rounded,
+                            const Color(0xFF3E9AE8),
+                            '${_stats!.longestStreak}',
+                            'Longest Streak',
+                          ),
+                          _StatItem(
+                            Icons.event_available_rounded,
+                            const Color(0xFFE85878),
+                            '${_stats!.successRate.round()}%',
+                            'Success Rate',
+                          ),
+                          _StatItem(
+                            Icons.check_circle_rounded,
+                            const Color(0xFF4CAF7D),
+                            '${_stats!.daysThisMonth}',
+                            'Days This Month',
+                          ),
+                          _StatItem(
+                            Icons.star_rounded,
+                            const Color(0xFFB48CEA),
+                            '${_stats!.totalXp}',
+                            'Total XP',
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 16),
+                      _sectionCard(
+                        title: 'Streak Calendar',
+                        child: const MonthlyStreakCalendar(),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _sectionCard(
-                  title: 'Streak Calendar',
-                  child: const MonthlyStreakCalendar(),
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
@@ -88,12 +119,20 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
           onTap: () {
             if (Navigator.canPop(context)) Navigator.pop(context);
           },
-          child: const Icon(Icons.arrow_back_rounded, color: AppColorsSP.purple, size: 26),
+          child: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColorsSP.purple,
+            size: 26,
+          ),
         ),
         const SizedBox(width: 14),
         Text(
           'Personal Progress',
-          style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w900, color: AppColorsSP.ink),
+          style: GoogleFonts.nunito(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: AppColorsSP.ink,
+          ),
         ),
       ],
     );
@@ -102,18 +141,25 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
   Widget _buildProfileXpRow(StreakStats stats) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+      ),
       child: Row(
         children: [
           ClipOval(
             child: Container(
               width: 56,
               height: 56,
-              color: AppColorsSP.purple.withOpacity(0.1),
+              color: AppColorsSP.purple.withValues(alpha: 0.1),
               child: Image.asset(
                 'assets/avatar.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.person_rounded, color: AppColorsSP.purple, size: 30),
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.person_rounded,
+                  color: AppColorsSP.purple,
+                  size: 30,
+                ),
               ),
             ),
           ),
@@ -122,10 +168,21 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(stats.fullName, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900, color: AppColorsSP.ink)),
+                Text(
+                  stats.fullName,
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColorsSP.ink,
+                  ),
+                ),
                 Text(
                   'Small steps. Big progress. 💜',
-                  style: GoogleFonts.nunito(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColorsSP.sub),
+                  style: GoogleFonts.nunito(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColorsSP.sub,
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -135,17 +192,38 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: const Color(0xFFF1EFFF), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1EFFF),
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.emoji_events_rounded, color: AppColorsSP.purple, size: 20),
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: AppColorsSP.purple,
+                  size: 20,
+                ),
                 const SizedBox(width: 6),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${stats.totalXp} Xp', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w900, color: AppColorsSP.ink)),
-                    Text('Total XP', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: AppColorsSP.sub)),
+                    Text(
+                      '${stats.totalXp} Xp',
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: AppColorsSP.ink,
+                      ),
+                    ),
+                    Text(
+                      'Total XP',
+                      style: GoogleFonts.nunito(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColorsSP.sub,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -167,23 +245,53 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 44,
                     height: 44,
-                    decoration: const BoxDecoration(color: Color(0xFFEDEBFB), shape: BoxShape.circle),
-                    child: const Icon(Icons.local_fire_department_rounded, color: AppColorsSP.purple, size: 24),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEDEBFB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: AppColorsSP.purple,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Text('${stats.currentStreak}', style: GoogleFonts.nunito(fontSize: 26, fontWeight: FontWeight.w900, color: AppColorsSP.ink)),
-                  Text('day streak!', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: AppColorsSP.ink)),
+                  Text(
+                    '${stats.currentStreak}',
+                    style: GoogleFonts.nunito(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppColorsSP.ink,
+                    ),
+                  ),
+                  Text(
+                    'day streak!',
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColorsSP.ink,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    stats.currentStreak > 0 ? 'Keep it going! 🔥' : 'Complete a task today to start!',
-                    style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: AppColorsSP.sub),
+                    stats.currentStreak > 0
+                        ? 'Keep it going! 🔥'
+                        : 'Complete a task today to start!',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColorsSP.sub,
+                    ),
                   ),
                 ],
               ),
@@ -193,7 +301,10 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+              ),
               child: _goalCard(
                 'Reach a $goalDays-day streak',
                 '$daysToGo days to go',
@@ -213,13 +324,34 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
         Container(
           width: 36,
           height: 36,
-          decoration: const BoxDecoration(color: Color(0xFFEDEBFB), shape: BoxShape.circle),
-          child: const Icon(Icons.track_changes_rounded, color: AppColorsSP.purple, size: 18),
+          decoration: const BoxDecoration(
+            color: Color(0xFFEDEBFB),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.track_changes_rounded,
+            color: AppColorsSP.purple,
+            size: 18,
+          ),
         ),
         const SizedBox(height: 10),
-        Text(title, style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: AppColorsSP.ink)),
+        Text(
+          title,
+          style: GoogleFonts.nunito(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: AppColorsSP.ink,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(subtitle, style: GoogleFonts.nunito(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColorsSP.sub)),
+        Text(
+          subtitle,
+          style: GoogleFonts.nunito(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: AppColorsSP.sub,
+          ),
+        ),
         const SizedBox(height: 10),
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
@@ -234,19 +366,33 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
     );
   }
 
-  Widget _sectionCard({required String title, Widget? trailing, required Widget child}) {
+  Widget _sectionCard({
+    required String title,
+    Widget? trailing,
+    required Widget child,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: AppColorsSP.ink)),
-              if (trailing != null) trailing,
+              Text(
+                title,
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColorsSP.ink,
+                ),
+              ),
+              ?trailing,
             ],
           ),
           const SizedBox(height: 14),
@@ -264,9 +410,24 @@ class _StreakProgressScreenState extends State<StreakProgressScreen> {
             children: [
               Icon(s.icon, color: s.color, size: 22),
               const SizedBox(height: 8),
-              Text(s.value, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w900, color: AppColorsSP.ink)),
+              Text(
+                s.value,
+                style: GoogleFonts.nunito(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: AppColorsSP.ink,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(s.label, textAlign: TextAlign.center, style: GoogleFonts.nunito(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColorsSP.sub)),
+              Text(
+                s.label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColorsSP.sub,
+                ),
+              ),
             ],
           ),
         );

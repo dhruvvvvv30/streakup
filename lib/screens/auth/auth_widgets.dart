@@ -22,12 +22,12 @@ class AuthScaffold extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: showBack
           ? AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.ink),
-        title: Text(title, style: AppText.title(size: 16)),
-        centerTitle: true,
-      )
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: AppColors.ink),
+              title: Text(title, style: AppText.title(size: 16)),
+              centerTitle: true,
+            )
           : null,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -55,7 +55,11 @@ class AuthBrandMark extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 26),
+          child: const Icon(
+            Icons.local_fire_department_rounded,
+            color: Colors.white,
+            size: 26,
+          ),
         ),
         const SizedBox(width: 12),
         Text('StreakUp', style: AppText.headline(size: 22)),
@@ -98,7 +102,14 @@ class _AuthTextFieldState extends State<AuthTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label, style: AppText.body(size: 13, weight: FontWeight.w800, color: AppColors.ink)),
+        Text(
+          widget.label,
+          style: AppText.body(
+            size: 13,
+            weight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: widget.controller,
@@ -108,7 +119,11 @@ class _AuthTextFieldState extends State<AuthTextField> {
           style: AppText.body(size: 14, color: AppColors.ink),
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle: AppText.body(size: 14, color: AppColors.sub, weight: FontWeight.w600),
+            hintStyle: AppText.body(
+              size: 14,
+              color: AppColors.sub,
+              weight: FontWeight.w600,
+            ),
             filled: true,
             fillColor: AppColors.lightPurple,
             prefixIcon: widget.prefixIcon != null
@@ -116,15 +131,20 @@ class _AuthTextFieldState extends State<AuthTextField> {
                 : null,
             suffixIcon: widget.obscure
                 ? IconButton(
-              icon: Icon(
-                _obscured ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                size: 20,
-                color: AppColors.sub,
-              ),
-              onPressed: () => setState(() => _obscured = !_obscured),
-            )
+                    icon: Icon(
+                      _obscured
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      size: 20,
+                      color: AppColors.sub,
+                    ),
+                    onPressed: () => setState(() => _obscured = !_obscured),
+                  )
                 : null,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -141,7 +161,11 @@ class _AuthTextFieldState extends State<AuthTextField> {
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: AppColors.error, width: 1.2),
             ),
-            errorStyle: AppText.body(size: 11.5, color: AppColors.error, weight: FontWeight.w700),
+            errorStyle: AppText.body(
+              size: 11.5,
+              color: AppColors.error,
+              weight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -172,16 +196,21 @@ class AuthPrimaryButton extends StatelessWidget {
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.purple,
-          disabledBackgroundColor: AppColors.purple.withOpacity(0.6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          disabledBackgroundColor: AppColors.purple.withValues(alpha: 0.6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
         child: loading
             ? const SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-        )
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: Colors.white,
+                ),
+              )
             : Text(label, style: AppText.button()),
       ),
     );
@@ -210,7 +239,9 @@ class AuthSecondaryButton extends StatelessWidget {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

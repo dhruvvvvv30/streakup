@@ -17,8 +17,14 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   ProfileDetailData? _data;
   bool _loading = true;
 
-  static final List<String> _maleAvatars = List.generate(6, (i) => 'assets/avatars/male_${i + 1}.png');
-  static final List<String> _femaleAvatars = List.generate(6, (i) => 'assets/avatars/female_${i + 1}.png');
+  static final List<String> _maleAvatars = List.generate(
+    6,
+    (i) => 'assets/avatars/male_${i + 1}.png',
+  );
+  static final List<String> _femaleAvatars = List.generate(
+    6,
+    (i) => 'assets/avatars/female_${i + 1}.png',
+  );
 
   @override
   void initState() {
@@ -30,13 +36,17 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     setState(() => _loading = true);
     try {
       final data = await _profileService.fetchProfileDetail();
-      if (mounted) setState(() { _data = data; _loading = false; });
+      if (mounted)
+        setState(() {
+          _data = data;
+          _loading = false;
+        });
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
       }
     }
   }
@@ -49,17 +59,29 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('Edit Profile', style: GoogleFonts.nunito(fontWeight: FontWeight.w900)),
+        title: Text(
+          'Edit Profile',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.w900),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Full Name')),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Full Name'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: usernameController, decoration: const InputDecoration(labelText: 'Username')),
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.purple),
             onPressed: () => Navigator.pop(ctx, true),
@@ -78,7 +100,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         _load();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
         }
       }
     }
@@ -91,7 +115,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: AppColors.purple)),
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppColors.purple),
+        ),
         child: child!,
       ),
     );
@@ -101,7 +127,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         _load();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
         }
       }
     }
@@ -114,7 +142,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           final avatars = gender == 'male' ? _maleAvatars : _femaleAvatars;
@@ -123,7 +153,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Choose Avatar', style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: 18)),
+                Text(
+                  'Choose Avatar',
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -131,7 +167,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                       child: ChoiceChip(
                         label: const Text('Male'),
                         selected: gender == 'male',
-                        onSelected: (_) => setSheetState(() { gender = 'male'; selectedIndex = 0; }),
+                        onSelected: (_) => setSheetState(() {
+                          gender = 'male';
+                          selectedIndex = 0;
+                        }),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -139,7 +178,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                       child: ChoiceChip(
                         label: const Text('Female'),
                         selected: gender == 'female',
-                        onSelected: (_) => setSheetState(() { gender = 'female'; selectedIndex = 0; }),
+                        onSelected: (_) => setSheetState(() {
+                          gender = 'female';
+                          selectedIndex = 0;
+                        }),
                       ),
                     ),
                   ],
@@ -150,7 +192,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: avatars.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, crossAxisSpacing: 16, mainAxisSpacing: 16,
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
                   ),
                   itemBuilder: (context, index) {
                     final selected = selectedIndex == index;
@@ -159,13 +203,18 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: selected ? AppColors.purple : Colors.transparent, width: 3),
+                          border: Border.all(
+                            color: selected
+                                ? AppColors.purple
+                                : Colors.transparent,
+                            width: 3,
+                          ),
                         ),
                         child: CircleAvatar(
                           radius: 32,
                           backgroundColor: AppColors.lightPurple,
                           backgroundImage: AssetImage(avatars[index]),
-                          onBackgroundImageError: (_, __) {},
+                          onBackgroundImageError: (_, _) {},
                         ),
                       ),
                     );
@@ -175,19 +224,30 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.purple, padding: const EdgeInsets.symmetric(vertical: 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.purple,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     onPressed: () async {
                       Navigator.pop(ctx);
                       try {
-                        await _profileService.updateAvatar(avatars[selectedIndex], gender);
+                        await _profileService.updateAvatar(
+                          avatars[selectedIndex],
+                          gender,
+                        );
                         _load();
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to save: $e')),
+                          );
                         }
                       }
                     },
-                    child: const Text('Save', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ],
@@ -210,12 +270,30 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: const Icon(Icons.arrow_back_rounded, color: AppColors.purple, size: 26),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppColors.purple,
+                    size: 26,
+                  ),
                 ),
-                Text('Profile', style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.ink)),
+                Text(
+                  'Profile',
+                  style: GoogleFonts.nunito(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
+                  ),
+                ),
                 GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                  child: const Icon(Icons.settings_outlined, color: AppColors.purple, size: 26),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  ),
+                  child: const Icon(
+                    Icons.settings_outlined,
+                    color: AppColors.purple,
+                    size: 26,
+                  ),
                 ),
               ],
             ),
@@ -223,61 +301,75 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           const SizedBox(height: 16),
           Expanded(
             child: _loading || _data == null
-                ? const Center(child: CircularProgressIndicator(color: AppColors.purple))
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.purple),
+                  )
                 : RefreshIndicator(
-              onRefresh: _load,
-              color: AppColors.purple,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: Column(
-                  children: [
-                    _buildHeaderCard(_data!),
-                    const SizedBox(height: 16),
-                    _buildInfoRow(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Avatar',
-                      subtitle: 'Choose your avatar',
-                      trailing: _avatarThumbnails(_data!),
-                      onTap: _pickAvatar,
+                    onRefresh: _load,
+                    color: AppColors.purple,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      child: Column(
+                        children: [
+                          _buildHeaderCard(_data!),
+                          const SizedBox(height: 16),
+                          _buildInfoRow(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Avatar',
+                            subtitle: 'Choose your avatar',
+                            trailing: _avatarThumbnails(_data!),
+                            onTap: _pickAvatar,
+                          ),
+                          _buildInfoRow(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Name',
+                            subtitle: _data!.fullName,
+                            onTap: _editNameUsername,
+                          ),
+                          _buildInfoRow(
+                            icon: Icons.alternate_email_rounded,
+                            title: 'Username',
+                            subtitle: _data!.username.isNotEmpty
+                                ? '@${_data!.username}'
+                                : 'Not set',
+                            onTap: _editNameUsername,
+                          ),
+                          _buildInfoRow(
+                            icon: Icons.calendar_today_rounded,
+                            title: 'Birthday',
+                            subtitle: _data!.birthdayFormatted ?? 'Not set',
+                            onTap: _editBirthday,
+                          ),
+                          const SizedBox(height: 4),
+                          _buildStatsRow(_data!),
+                          const SizedBox(height: 12),
+                          _buildInfoRow(
+                            icon: Icons.bar_chart_rounded,
+                            title: 'Habit Stats',
+                            subtitle: 'View your habit trends and insights',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const StreakProgressScreen(),
+                              ),
+                            ),
+                          ),
+                          _buildInfoRow(
+                            icon: Icons.settings_outlined,
+                            title: 'Settings',
+                            subtitle: 'Notifications, privacy and more',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildInfoRow(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Name',
-                      subtitle: _data!.fullName,
-                      onTap: _editNameUsername,
-                    ),
-                    _buildInfoRow(
-                      icon: Icons.alternate_email_rounded,
-                      title: 'Username',
-                      subtitle: _data!.username.isNotEmpty ? '@${_data!.username}' : 'Not set',
-                      onTap: _editNameUsername,
-                    ),
-                    _buildInfoRow(
-                      icon: Icons.calendar_today_rounded,
-                      title: 'Birthday',
-                      subtitle: _data!.birthdayFormatted ?? 'Not set',
-                      onTap: _editBirthday,
-                    ),
-                    const SizedBox(height: 4),
-                    _buildStatsRow(_data!),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                      icon: Icons.bar_chart_rounded,
-                      title: 'Habit Stats',
-                      subtitle: 'View your habit trends and insights',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StreakProgressScreen())),
-                    ),
-                    _buildInfoRow(
-                      icon: Icons.settings_outlined,
-                      title: 'Settings',
-                      subtitle: 'Notifications, privacy and more',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
           ),
         ],
       ),
@@ -298,11 +390,22 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                   child: Container(
                     width: 68,
                     height: 68,
-                    color: AppColors.purple.withOpacity(0.1),
+                    color: AppColors.purple.withValues(alpha: 0.1),
                     child: data.avatarPath != null
-                        ? Image.asset(data.avatarPath!, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person_rounded, color: AppColors.purple, size: 36))
-                        : const Icon(Icons.person_rounded, color: AppColors.purple, size: 36),
+                        ? Image.asset(
+                            data.avatarPath!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.purple,
+                              size: 36,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person_rounded,
+                            color: AppColors.purple,
+                            size: 36,
+                          ),
                   ),
                 ),
                 Positioned(
@@ -311,8 +414,15 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                   child: Container(
                     width: 22,
                     height: 22,
-                    decoration: const BoxDecoration(color: AppColors.purple, shape: BoxShape.circle),
-                    child: const Icon(Icons.edit_rounded, size: 12, color: Colors.white),
+                    decoration: const BoxDecoration(
+                      color: AppColors.purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -323,15 +433,30 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data.fullName, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.ink)),
+                Text(
+                  data.fullName,
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
+                  ),
+                ),
                 Text(
                   data.username.isNotEmpty ? '@${data.username}' : '',
-                  style: GoogleFonts.nunito(fontSize: 13, color: AppColors.sub, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.nunito(
+                    fontSize: 13,
+                    color: AppColors.sub,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   data.tagline,
-                  style: GoogleFonts.nunito(fontSize: 12.5, color: AppColors.sub, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.nunito(
+                    fontSize: 12.5,
+                    color: AppColors.sub,
+                    fontWeight: FontWeight.w700,
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -342,12 +467,26 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             onTap: _editNameUsername,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: const Color(0xFFEDEBFB), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDEBFB),
+                borderRadius: BorderRadius.circular(14),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.edit_outlined, size: 15, color: AppColors.purple),
+                  const Icon(
+                    Icons.edit_outlined,
+                    size: 15,
+                    color: AppColors.purple,
+                  ),
                   const SizedBox(width: 6),
-                  Text('Edit Profile', style: GoogleFonts.nunito(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppColors.purple)),
+                  Text(
+                    'Edit Profile',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.purple,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -364,7 +503,15 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         height: 32,
         color: AppColors.lightPurple,
         child: data.avatarPath != null
-            ? Image.asset(data.avatarPath!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person_rounded, size: 18, color: AppColors.sub))
+            ? Image.asset(
+                data.avatarPath!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.person_rounded,
+                  size: 18,
+                  color: AppColors.sub,
+                ),
+              )
             : const Icon(Icons.person_rounded, size: 18, color: AppColors.sub),
       ),
     );
@@ -389,7 +536,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: const Color(0xFFEDEBFB), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDEBFB),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(icon, color: AppColors.purple, size: 20),
               ),
               const SizedBox(width: 14),
@@ -397,13 +547,32 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.ink)),
-                    Text(subtitle, style: GoogleFonts.nunito(fontSize: 12, color: AppColors.sub, fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.nunito(
+                        fontSize: 12,
+                        color: AppColors.sub,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              if (trailing != null) trailing,
-              if (trailing == null) const Icon(Icons.chevron_right_rounded, color: AppColors.sub, size: 20),
+              ?trailing,
+              if (trailing == null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.sub,
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -414,14 +583,35 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   Widget _buildStatsRow(ProfileDetailData data) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: softCard(radius: 18, fill: const Color(0xFFEDEBFB).withOpacity(0.6)),
+      decoration: softCard(
+        radius: 18,
+        fill: const Color(0xFFEDEBFB).withValues(alpha: 0.6),
+      ),
       child: Row(
         children: [
-          Expanded(child: _stat(Icons.local_fire_department_rounded, '${data.currentStreak}', 'Day Streak')),
+          Expanded(
+            child: _stat(
+              Icons.local_fire_department_rounded,
+              '${data.currentStreak}',
+              'Day Streak',
+            ),
+          ),
           Container(width: 1, height: 40, color: AppColors.cardBorder),
-          Expanded(child: _stat(Icons.menu_book_rounded, '${data.totalJournalEntries}', 'Total Journal\nEntries')),
+          Expanded(
+            child: _stat(
+              Icons.menu_book_rounded,
+              '${data.totalJournalEntries}',
+              'Total Journal\nEntries',
+            ),
+          ),
           Container(width: 1, height: 40, color: AppColors.cardBorder),
-          Expanded(child: _stat(Icons.check_circle_outline_rounded, '${data.completedTasks}', 'Completed Tasks')),
+          Expanded(
+            child: _stat(
+              Icons.check_circle_outline_rounded,
+              '${data.completedTasks}',
+              'Completed Tasks',
+            ),
+          ),
         ],
       ),
     );
@@ -432,9 +622,24 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       children: [
         Icon(icon, color: AppColors.purple, size: 20),
         const SizedBox(height: 4),
-        Text(value, style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.ink)),
+        Text(
+          value,
+          style: GoogleFonts.nunito(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.ink,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label, textAlign: TextAlign.center, style: GoogleFonts.nunito(fontSize: 10.5, color: AppColors.sub, fontWeight: FontWeight.w700)),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            fontSize: 10.5,
+            color: AppColors.sub,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }

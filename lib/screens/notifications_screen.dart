@@ -13,12 +13,14 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 RealtimeChannel? _channel;
+
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _service = NotificationService();
   final _friendService = FriendService();
   List<AppNotification> _items = [];
   bool _loading = true;
-  final Set<String> _actingOnIds = {}; // requestIds currently being accepted/declined
+  final Set<String> _actingOnIds =
+      {}; // requestIds currently being accepted/declined
 
   @override
   void initState() {
@@ -37,7 +39,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _loading = true);
     try {
       final items = await _service.fetchNotifications();
-      if (mounted) setState(() { _items = items; _loading = false; });
+      if (mounted)
+        setState(() {
+          _items = items;
+          _loading = false;
+        });
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -97,9 +103,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _actingOnIds.remove(requestId));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to accept: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to accept: $e')));
       }
     }
   }
@@ -119,9 +125,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _actingOnIds.remove(requestId));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to decline: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to decline: $e')));
       }
     }
   }
@@ -129,21 +135,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   ({IconData icon, Color bg, Color color}) _styleFor(String type) {
     switch (type) {
       case 'streak_milestone':
-        return (icon: Icons.emoji_events_rounded, bg: const Color(0xFFEDEBFB), color: AppColors.purple);
+        return (
+          icon: Icons.emoji_events_rounded,
+          bg: const Color(0xFFEDEBFB),
+          color: AppColors.purple,
+        );
       case 'task_completed':
-        return (icon: Icons.check_rounded, bg: const Color(0xFFDDF4E3), color: const Color(0xFF3FA85B));
+        return (
+          icon: Icons.check_rounded,
+          bg: const Color(0xFFDDF4E3),
+          color: const Color(0xFF3FA85B),
+        );
       case 'mood_check':
-        return (icon: Icons.sentiment_satisfied_alt_rounded, bg: const Color(0xFFFFF0CF), color: const Color(0xFFE8A93B));
+        return (
+          icon: Icons.sentiment_satisfied_alt_rounded,
+          bg: const Color(0xFFFFF0CF),
+          color: const Color(0xFFE8A93B),
+        );
       case 'reminder':
-        return (icon: Icons.calendar_today_rounded, bg: const Color(0xFFEDEBFB), color: AppColors.purple);
+        return (
+          icon: Icons.calendar_today_rounded,
+          bg: const Color(0xFFEDEBFB),
+          color: AppColors.purple,
+        );
       case 'weekly_summary':
-        return (icon: Icons.star_rounded, bg: const Color(0xFFEDEBFB), color: AppColors.purple);
+        return (
+          icon: Icons.star_rounded,
+          bg: const Color(0xFFEDEBFB),
+          color: AppColors.purple,
+        );
       case 'friend_nudge':
-        return (icon: Icons.favorite_rounded, bg: const Color(0xFFFCE4EC), color: const Color(0xFFE85878));
+        return (
+          icon: Icons.favorite_rounded,
+          bg: const Color(0xFFFCE4EC),
+          color: const Color(0xFFE85878),
+        );
       case 'friend_request':
-        return (icon: Icons.person_add_rounded, bg: const Color(0xFFEDEBFB), color: AppColors.purple);
+        return (
+          icon: Icons.person_add_rounded,
+          bg: const Color(0xFFEDEBFB),
+          color: AppColors.purple,
+        );
       default:
-        return (icon: Icons.notifications_rounded, bg: const Color(0xFFEDEBFB), color: AppColors.purple);
+        return (
+          icon: Icons.notifications_rounded,
+          bg: const Color(0xFFEDEBFB),
+          color: AppColors.purple,
+        );
     }
   }
 
@@ -168,13 +206,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: const Icon(Icons.arrow_back_rounded, color: AppColors.purple, size: 26),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppColors.purple,
+                    size: 26,
+                  ),
                 ),
                 GestureDetector(
                   onTap: _markAllRead,
                   child: Text(
                     'Mark all read',
-                    style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.purple),
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.purple,
+                    ),
                   ),
                 ),
               ],
@@ -183,7 +229,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           const SizedBox(height: 8),
           Text(
             'Notifications',
-            style: GoogleFonts.nunito(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.ink),
+            style: GoogleFonts.nunito(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+            ),
           ),
           const SizedBox(height: 6),
           Row(
@@ -193,53 +243,70 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 "Stay updated with what's happening ",
                 style: GoogleFonts.nunito(fontSize: 14, color: AppColors.sub),
               ),
-              const Icon(Icons.notifications_rounded, size: 18, color: AppColors.purple),
+              const Icon(
+                Icons.notifications_rounded,
+                size: 18,
+                color: AppColors.purple,
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.purple))
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.purple),
+                  )
                 : _items.isEmpty
                 ? Center(
-              child: Text(
-                'No notifications yet',
-                style: GoogleFonts.nunito(color: AppColors.sub, fontWeight: FontWeight.w700),
-              ),
-            )
-                : RefreshIndicator(
-              onRefresh: _load,
-              color: AppColors.purple,
-              child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
-                itemBuilder: (context, i) {
-                  final item = _items[i];
-                  final style = _styleFor(item.type);
-                  final isFriendRequest = item.type == 'friend_request';
-                  final isActing = item.referenceId != null && _actingOnIds.contains(item.referenceId);
-
-                  return GestureDetector(
-                    onTap: isFriendRequest ? null : () => _onTapItem(item),
-                    child: _NotificationCard(
-                      icon: style.icon,
-                      iconBg: style.bg,
-                      iconColor: style.color,
-                      title: item.title,
-                      subtitle: item.body ?? '',
-                      time: _timeAgo(item.createdAt),
-                      unread: item.unread,
-                      isFriendRequest: isFriendRequest,
-                      isActing: isActing,
-                      onAccept: isFriendRequest ? () => _acceptFriendRequest(item) : null,
-                      onDecline: isFriendRequest ? () => _declineFriendRequest(item) : null,
+                    child: Text(
+                      'No notifications yet',
+                      style: GoogleFonts.nunito(
+                        color: AppColors.sub,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    color: AppColors.purple,
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: _items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 14),
+                      itemBuilder: (context, i) {
+                        final item = _items[i];
+                        final style = _styleFor(item.type);
+                        final isFriendRequest = item.type == 'friend_request';
+                        final isActing =
+                            item.referenceId != null &&
+                            _actingOnIds.contains(item.referenceId);
+
+                        return GestureDetector(
+                          onTap: isFriendRequest
+                              ? null
+                              : () => _onTapItem(item),
+                          child: _NotificationCard(
+                            icon: style.icon,
+                            iconBg: style.bg,
+                            iconColor: style.color,
+                            title: item.title,
+                            subtitle: item.body ?? '',
+                            time: _timeAgo(item.createdAt),
+                            unread: item.unread,
+                            isFriendRequest: isFriendRequest,
+                            isActing: isActing,
+                            onAccept: isFriendRequest
+                                ? () => _acceptFriendRequest(item)
+                                : null,
+                            onDecline: isFriendRequest
+                                ? () => _declineFriendRequest(item)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -285,7 +352,10 @@ class _NotificationCard extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 14),
@@ -293,16 +363,32 @@ class _NotificationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                Text(
+                  title,
+                  style: GoogleFonts.nunito(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: GoogleFonts.nunito(fontSize: 13.5, color: AppColors.sub)),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.nunito(
+                    fontSize: 13.5,
+                    color: AppColors.sub,
+                  ),
+                ),
                 if (isFriendRequest) ...[
                   const SizedBox(height: 10),
                   if (isActing)
                     const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.purple),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.purple,
+                      ),
                     )
                   else
                     Row(
@@ -312,8 +398,15 @@ class _NotificationCard extends StatelessWidget {
                           child: Container(
                             width: 34,
                             height: 34,
-                            decoration: const BoxDecoration(color: AppColors.purple, shape: BoxShape.circle),
-                            child: const Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                            decoration: const BoxDecoration(
+                              color: AppColors.purple,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -322,8 +415,15 @@ class _NotificationCard extends StatelessWidget {
                           child: Container(
                             width: 34,
                             height: 34,
-                            decoration: BoxDecoration(color: const Color(0xFFFFE2E2), shape: BoxShape.circle),
-                            child: const Icon(Icons.close_rounded, color: Color(0xFFE05555), size: 18),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE2E2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Color(0xFFE05555),
+                              size: 18,
+                            ),
                           ),
                         ),
                       ],
@@ -336,13 +436,19 @@ class _NotificationCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(time, style: GoogleFonts.nunito(fontSize: 12, color: AppColors.sub)),
+              Text(
+                time,
+                style: GoogleFonts.nunito(fontSize: 12, color: AppColors.sub),
+              ),
               const SizedBox(height: 8),
               if (unread && !isFriendRequest)
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(color: AppColors.purple, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: AppColors.purple,
+                    shape: BoxShape.circle,
+                  ),
                 ),
             ],
           ),

@@ -27,10 +27,7 @@ class FlameLogo extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.contain,
-        ),
+        child: Image.asset(assetPath, fit: BoxFit.contain),
       ),
     );
   }
@@ -39,15 +36,11 @@ class FlameLogo extends StatelessWidget {
 class HomeScreen extends StatefulWidget {
   final ValueChanged<int> onNavigateToTab;
 
-  const HomeScreen({
-    super.key,
-    required this.onNavigateToTab,
-  });
+  const HomeScreen({super.key, required this.onNavigateToTab});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
 
 class _HomeScreenState extends State<HomeScreen> {
   final _homeService = HomeService();
@@ -99,8 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _profileStore.refresh();
 
-      final data =
-      await _homeService.fetchHomeData();
+      final data = await _homeService.fetchHomeData();
 
       if (!mounted) return;
 
@@ -115,13 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _loading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to load home data: $e',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load home data: $e')));
     }
   }
 
@@ -132,71 +120,48 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, _) {
         if (_loading || _data == null) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.purple,
-            ),
+            child: CircularProgressIndicator(color: AppColors.purple),
           );
         }
 
         final baseData = _data!;
 
-        final liveProfile =
-            ProfileStore.instance.profile;
+        final liveProfile = ProfileStore.instance.profile;
 
         final data = liveProfile == null
             ? baseData
             : HomeData(
-          fullName: liveProfile.fullName,
-          avatarPath:
-          liveProfile.avatarPath,
-          currentStreak:
-          baseData.currentStreak,
-          totalXp:
-          liveProfile.xp,
-          daysCompletedThisWeek:
-          baseData.daysCompletedThisWeek,
-          journalDoneToday:
-          baseData.journalDoneToday,
-          moodSetToday:
-          baseData.moodSetToday,
-          upcomingTaskTitle:
-          baseData.upcomingTaskTitle,
-          upcomingTaskCategory:
-          baseData.upcomingTaskCategory,
-          weekdayCompletion:
-          baseData.weekdayCompletion,
-        );
+                fullName: liveProfile.fullName,
+                avatarPath: liveProfile.avatarPath,
+                currentStreak: baseData.currentStreak,
+                totalXp: liveProfile.xp,
+                daysCompletedThisWeek: baseData.daysCompletedThisWeek,
+                journalDoneToday: baseData.journalDoneToday,
+                moodSetToday: baseData.moodSetToday,
+                upcomingTaskTitle: baseData.upcomingTaskTitle,
+                upcomingTaskCategory: baseData.upcomingTaskCategory,
+                weekdayCompletion: baseData.weekdayCompletion,
+              );
 
         return RefreshIndicator(
           onRefresh: _load,
           color: AppColors.purple,
           child: SingleChildScrollView(
-            physics:
-            const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 16,
-            ),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const AppTopBar(showMenu: true),
                 const SizedBox(height: 16),
 
-                Text(
-                  'Hi, ${data.fullName}',
-                  style: AppText.headline(size: 28),
-                ),
+                Text('Hi, ${data.fullName}', style: AppText.headline(size: 28)),
 
                 const SizedBox(height: 2),
 
                 Text(
                   "Let's make today amazing!",
-                  style: AppText.body(
-                    size: 14,
-                    weight: FontWeight.w700,
-                  ),
+                  style: AppText.body(size: 14, weight: FontWeight.w700),
                 ),
 
                 const SizedBox(height: 20),
@@ -206,8 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                        const StreakProgressScreen(),
+                        builder: (context) => const StreakProgressScreen(),
                       ),
                     ).then((_) => _load());
                   },
@@ -217,19 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 GestureDetector(
-                  onTap: () =>
-                      widget.onNavigateToTab(2),
-                  child:
-                  _buildTodayProgressCard(data),
+                  onTap: () => widget.onNavigateToTab(2),
+                  child: _buildTodayProgressCard(data),
                 ),
 
                 const SizedBox(height: 16),
 
                 GestureDetector(
-                  onTap: () =>
-                      widget.onNavigateToTab(1),
-                  child:
-                  _buildUpcomingTaskCard(data),
+                  onTap: () => widget.onNavigateToTab(1),
+                  child: _buildUpcomingTaskCard(data),
                 ),
 
                 const SizedBox(height: 20),
@@ -251,8 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: appCard(radius: 28).copyWith(
         boxShadow: [
           BoxShadow(
-            color:
-            AppColors.purple.withOpacity(0.04),
+            color: AppColors.purple.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -260,21 +219,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          const FlameLogo(
-            size: 88,
-            assetPath: 'assets/streak_logo.png',
-          ),
+          const FlameLogo(size: 88, assetPath: 'assets/streak_logo.png'),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '${data.currentStreak}',
-                  style:
-                  AppText.title(size: 48)
-                      .copyWith(height: 1.0),
+                  style: AppText.title(size: 48).copyWith(height: 1.0),
                 ),
                 Text(
                   'DAY STREAK',
@@ -285,19 +238,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.lightPurple,
-                    borderRadius:
-                    BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
-                    mainAxisSize:
-                    MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.emoji_events_outlined,
@@ -315,10 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Text(
                         '  |  This week',
-                        style: AppText.body(
-                          size: 11,
-                          weight: FontWeight.w700,
-                        ),
+                        style: AppText.body(size: 11, weight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -334,148 +281,114 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTodayProgressCard(HomeData data) {
     final now = DateTime.now();
 
-    final dayLabel =
-        '${now.day} ${_monthName(now.month)}';
+    final dayLabel = '${now.day} ${_monthName(now.month)}';
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: appCard(radius: 28),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-      RichText(
-      text: TextSpan(
-      style: AppText.body(
-        size: 18,
-        weight: FontWeight.w800,
-        color: AppColors.ink,
-      ),
-      children: [
-        const TextSpan(
-          text: 'Today, ',
-        ),
-        TextSpan(
-          text: dayLabel,
-          style: AppText.body(
-            size: 18,
-            weight: FontWeight.w900,
-            color: AppColors.ink,
-          ).copyWith(
-            decoration:
-            TextDecoration.underline,
+          RichText(
+            text: TextSpan(
+              style: AppText.body(
+                size: 18,
+                weight: FontWeight.w800,
+                color: AppColors.ink,
+              ),
+              children: [
+                const TextSpan(text: 'Today, '),
+                TextSpan(
+                  text: dayLabel,
+                  style: AppText.body(
+                    size: 18,
+                    weight: FontWeight.w900,
+                    color: AppColors.ink,
+                  ).copyWith(decoration: TextDecoration.underline),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-    ),
-    const SizedBox(height: 16),
-    Row(
-    children: [
-    SizedBox(
-    width: 76,
-    height: 76,
-    child: Stack(
-    alignment: Alignment.center,
-    children: [
-    SizedBox(
-    width: 76,
-    height: 76,
-    child:
-    CircularProgressIndicator(
-    value:
-    (data.daysCompletedThisWeek /
-    7)
-        .clamp(0, 1),
-    strokeWidth: 9,
-    backgroundColor:
-    AppColors.lightPurple,
-      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.purple),
-    strokeCap:
-    StrokeCap.round,
-    ),
-    ),
-    Text(
-    '${data.daysCompletedThisWeek}/7',
-    style:
-    AppText.title(size: 18),
-    ),
-    ],
-    ),
-    ),
-    const SizedBox(width: 20),
-    Container(
-    width: 1,
-    height: 50,
-    color: AppColors.cardBorder,
-    ),
-    const SizedBox(width: 20),
-    Expanded(
-    child: Column(
-    children: [
-    Row(
-    mainAxisAlignment:
-    MainAxisAlignment.spaceBetween,
-    children: [
-    Text(
-    'Journal',
-    style:
-    AppText.title(size: 16),
-    ),
-    Icon(
-    data.journalDoneToday
-    ? Icons
-        .check_circle_rounded
-        : Icons
-        .check_circle_outline_rounded,
-    color:
-    AppColors.purple,
-    size: 24,
-    ),
-    ],
-    ),
-    const SizedBox(height: 12),
-    Row(
-    mainAxisAlignment:
-    MainAxisAlignment.spaceBetween,
-    children: [
-    Text(
-    'Mood',
-    style:
-    AppText.title(size: 16),
-    ),
-    Icon(
-    data.moodSetToday
-    ? Icons
-        .sentiment_satisfied_alt_rounded
-        : Icons
-        .sentiment_neutral_rounded,
-    color:
-    AppColors.purple,
-    size: 24,
-    ),
-    ],
-    ),
-    ],
-    ),
-    ),
-    ],
-    ),
-    ],
-    ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              SizedBox(
+                width: 76,
+                height: 76,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 76,
+                      height: 76,
+                      child: CircularProgressIndicator(
+                        value: (data.daysCompletedThisWeek / 7).clamp(0, 1),
+                        strokeWidth: 9,
+                        backgroundColor: AppColors.lightPurple,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.purple,
+                        ),
+                        strokeCap: StrokeCap.round,
+                      ),
+                    ),
+                    Text(
+                      '${data.daysCompletedThisWeek}/7',
+                      style: AppText.title(size: 18),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              Container(width: 1, height: 50, color: AppColors.cardBorder),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Journal', style: AppText.title(size: 16)),
+                        Icon(
+                          data.journalDoneToday
+                              ? Icons.check_circle_rounded
+                              : Icons.check_circle_outline_rounded,
+                          color: const Color(0xFF27AE60),
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Mood', style: AppText.title(size: 16)),
+                        Icon(
+                          data.moodSetToday
+                              ? Icons.sentiment_satisfied_alt_rounded
+                              : Icons.sentiment_neutral_rounded,
+                          color: AppColors.purple,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
-    }
+  }
 
   Widget _buildUpcomingTaskCard(HomeData data) {
-    final hasTask =
-        data.upcomingTaskTitle != null;
+    final hasTask = data.upcomingTaskTitle != null;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: appCard(radius: 28),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -483,8 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppColors.lightPurple,
-                  borderRadius:
-                  BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.assignment_outlined,
@@ -493,93 +405,73 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Upcoming task',
-                style:
-                AppText.title(size: 16),
-              ),
+              Text('Upcoming task', style: AppText.title(size: 16)),
             ],
           ),
           const SizedBox(height: 14),
           Container(
-            padding:
-            const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color:
-              AppColors.lightPurple.withOpacity(
-                0.4,
-              ),
-              borderRadius:
-              BorderRadius.circular(18),
+              color: AppColors.lightPurple.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: hasTask
                 ? Row(
-              children: [
-                const Icon(
-                  Icons
-                      .radio_button_unchecked_rounded,
-                  color: AppColors.sub,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        data.upcomingTaskTitle!,
-                        style: AppText.body(
-                          size: 14,
-                          weight:
-                          FontWeight.w800,
-                          color:
-                          AppColors.ink,
+                      const Icon(
+                        Icons.radio_button_unchecked_rounded,
+                        color: AppColors.sub,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              data.upcomingTaskTitle!,
+                              style: AppText.body(
+                                size: 14,
+                                weight: FontWeight.w800,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 13,
+                                  color: AppColors.purple,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  data.upcomingTaskCategory ?? 'Personal',
+                                  style: AppText.body(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: AppColors.purple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.menu_book_rounded,
-                            size: 13,
-                            color:
-                            AppColors.purple,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            data.upcomingTaskCategory ??
-                                'Personal',
-                            style: AppText.body(
-                              size: 12,
-                              weight:
-                              FontWeight.w700,
-                              color:
-                              AppColors.purple,
-                            ),
-                          ),
-                        ],
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.sub,
+                        size: 22,
                       ),
                     ],
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.sub,
-                  size: 22,
-                ),
-              ],
-            )
+                  )
                 : Text(
-              'No pending tasks ? nice work! ?',
-              style: AppText.body(
-                size: 13,
-                weight: FontWeight.w700,
-                color: AppColors.sub,
-              ),
-            ),
+                    'No pending tasks ? nice work! ?',
+                    style: AppText.body(
+                      size: 13,
+                      weight: FontWeight.w700,
+                      color: AppColors.sub,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -589,31 +481,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildWeeklyTrackerRow(HomeData data) {
     final today = DateTime.now();
 
-    const labels = [
-      'M',
-      'T',
-      'W',
-      'Th',
-      'F',
-      'Sa',
-      'S',
-    ];
+    const labels = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'S'];
 
     return Row(
-      mainAxisAlignment:
-      MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (i) {
         final weekdayNum = i + 1;
 
-        final isPast =
-            weekdayNum < today.weekday;
+        final isPast = weekdayNum < today.weekday;
 
-        final isToday =
-            weekdayNum == today.weekday;
+        final isToday = weekdayNum == today.weekday;
 
-        final completed =
-            data.weekdayCompletion[weekdayNum] ??
-                false;
+        final completed = data.weekdayCompletion[weekdayNum] ?? false;
 
         Color bg;
         Color iconColor;
@@ -629,8 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
           iconType = 'minus';
         } else if (isToday) {
           bg = const Color(0xFFFFF7E5);
-          iconColor =
-          const Color(0xFFF2C94C);
+          iconColor = const Color(0xFFF2C94C);
           iconType = 'dot';
         } else {
           bg = AppColors.lightPurple;
@@ -638,30 +516,23 @@ class _HomeScreenState extends State<HomeScreen> {
           iconType = 'circle';
         }
 
-        return _buildDayCapsule(
-          labels[i],
-          bg,
-          iconColor,
-          iconType: iconType,
-        );
+        return _buildDayCapsule(labels[i], bg, iconColor, iconType: iconType);
       }),
     );
   }
 
   Widget _buildDayCapsule(
-      String day,
-      Color bgColor,
-      Color iconColor, {
-        required String iconType,
-      }) {
+    String day,
+    Color bgColor,
+    Color iconColor, {
+    required String iconType,
+  }) {
     return Container(
       width: 42,
-      padding:
-      const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius:
-        BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
@@ -692,11 +563,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Icon(
-                  Icons.remove,
-                  size: 10,
-                  color: Colors.white,
-                ),
+                child: Icon(Icons.remove, size: 10, color: Colors.white),
               ),
             )
           else
@@ -705,10 +572,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 14,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: iconColor,
-                  width: 2,
-                ),
+                border: Border.all(color: iconColor, width: 2),
               ),
             ),
         ],

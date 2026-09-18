@@ -7,10 +7,10 @@ import 'screens/profile_detail_screen.dart';
 import '../service/profile_store.dart'; // <-- ADJUST: path to wherever ProfileStore lives
 
 void showAddOptionsSheet(
-    BuildContext context, {
-      required VoidCallback onAddTask,
-      required VoidCallback onAddJournal,
-    }) {
+  BuildContext context, {
+  required VoidCallback onAddTask,
+  required VoidCallback onAddJournal,
+}) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
@@ -24,6 +24,7 @@ void showAddOptionsSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Drag handle
           Container(
             width: 48,
             height: 5,
@@ -33,51 +34,34 @@ void showAddOptionsSheet(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          Text(
-            'What do you want to add?',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
-            ),
+
+          // Add Task
+          _AddOptionCard(
+            icon: Icons.description_outlined,
+            badgeIcon: Icons.add,
+            title: 'Add Task',
+            onTap: () {
+              Navigator.pop(context);
+              onAddTask();
+            },
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Small steps. Big progress.',
-            style: GoogleFonts.nunito(fontSize: 14, color: AppColors.sub),
+
+          const SizedBox(height: 14),
+
+          // Journal Entry
+          _AddOptionCard(
+            icon: Icons.auto_stories_outlined,
+            badgeIcon: Icons.edit,
+            title: 'Journal Entry',
+            onTap: () {
+              Navigator.pop(context);
+              onAddJournal();
+            },
           ),
+
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _AddOptionCard(
-                  icon: Icons.description_outlined,
-                  badgeIcon: Icons.add,
-                  title: 'Add Task',
-                  subtitle: 'Create a new\ntask or habit',
-                  onTap: () {
-                    Navigator.pop(context);
-                    onAddTask();
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _AddOptionCard(
-                  icon: Icons.auto_stories_outlined,
-                  badgeIcon: Icons.edit,
-                  title: 'Journal Entry',
-                  subtitle: 'Write about\nyour day',
-                  onTap: () {
-                    Navigator.pop(context);
-                    onAddJournal();
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+
+          // Close button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
@@ -87,7 +71,11 @@ void showAddOptionsSheet(
                 color: Color(0xFFEDEBFB),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close_rounded, color: AppColors.purple, size: 24),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.purple,
+                size: 24,
+              ),
             ),
           ),
         ],
@@ -100,14 +88,12 @@ class _AddOptionCard extends StatelessWidget {
   final IconData icon;
   final IconData badgeIcon;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
 
   const _AddOptionCard({
     required this.icon,
     required this.badgeIcon,
     required this.title,
-    required this.subtitle,
     required this.onTap,
   });
 
@@ -116,46 +102,43 @@ class _AddOptionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.cardBorder, width: 1.5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, size: 44, color: AppColors.purple),
+                Icon(icon, size: 32, color: AppColors.purple),
                 Positioned(
-                  right: -6,
+                  right: -5,
                   bottom: -4,
                   child: Container(
-                    width: 22,
-                    height: 22,
+                    width: 18,
+                    height: 18,
                     decoration: const BoxDecoration(
                       color: AppColors.purple,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(badgeIcon, size: 13, color: Colors.white),
+                    child: Icon(badgeIcon, size: 11, color: Colors.white),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: GoogleFonts.nunito(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(fontSize: 12.5, color: AppColors.sub, height: 1.3),
             ),
           ],
         ),
@@ -184,12 +167,12 @@ class AppColors {
 }
 
 BoxDecoration softCard({double radius = 22, Color? fill}) => BoxDecoration(
-  color: fill ?? Colors.white.withOpacity(0.85),
+  color: fill ?? Colors.white.withValues(alpha: 0.85),
   borderRadius: BorderRadius.circular(radius),
   border: Border.all(color: AppColors.cardBorder, width: 1.2),
   boxShadow: [
     BoxShadow(
-      color: AppColors.purple.withOpacity(0.08),
+      color: AppColors.purple.withValues(alpha: 0.08),
       blurRadius: 20,
       offset: const Offset(0, 8),
     ),
@@ -200,7 +183,12 @@ class GradientScaffold extends StatelessWidget {
   final Widget child;
   final Widget? bottomNavigationBar;
   final Widget? endDrawer;
-  const GradientScaffold({super.key, required this.child, this.bottomNavigationBar, this.endDrawer});
+  const GradientScaffold({
+    super.key,
+    required this.child,
+    this.bottomNavigationBar,
+    this.endDrawer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +224,8 @@ class AppTopBar extends StatelessWidget {
         Builder(
           builder: (innerContext) => _circleBtn(
             icon: showMenu ? Icons.menu_rounded : Icons.arrow_back_rounded,
-            onTap: onBack ??
+            onTap:
+                onBack ??
                 (showMenu
                     ? () => Scaffold.of(innerContext).openEndDrawer()
                     : _goHome),
@@ -262,17 +251,24 @@ class AppTopBar extends StatelessWidget {
   void _goHome() {
     navigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MainWrapper()),
-          (route) => false,
+      (route) => false,
     );
   }
 
-  Widget _circleBtn({required IconData icon, required VoidCallback onTap, bool badge = false}) {
+  Widget _circleBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool badge = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
-        decoration: softCard(radius: 14, fill: Colors.white.withOpacity(0.9)),
+        decoration: softCard(
+          radius: 14,
+          fill: Colors.white.withValues(alpha: 0.9),
+        ),
         child: Stack(
           children: [
             Center(child: Icon(icon, color: AppColors.ink, size: 20)),
@@ -283,7 +279,10 @@ class AppTopBar extends StatelessWidget {
                 child: Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
@@ -315,12 +314,19 @@ class _AppTopBarAvatar extends StatelessWidget {
               color: Colors.white,
               child: avatarPath != null
                   ? Image.asset(
-                avatarPath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.person_rounded, color: AppColors.purple, size: 26),
-              )
-                  : const Icon(Icons.person_rounded, color: AppColors.purple, size: 26),
+                      avatarPath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.person_rounded,
+                        color: AppColors.purple,
+                        size: 26,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.person_rounded,
+                      color: AppColors.purple,
+                      size: 26,
+                    ),
             ),
           ),
         );
@@ -333,14 +339,19 @@ class AppBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
-  const AppBottomNav({super.key, required this.index, required this.onTap, required this.onAdd});
+  const AppBottomNav({
+    super.key,
+    required this.index,
+    required this.onTap,
+    required this.onAdd,
+  });
 
   static const _icons = [
     Icons.home_rounded,
     Icons.assignment_turned_in_rounded,
     null,
     Icons.menu_book_rounded,
-    Icons.groups_rounded
+    Icons.groups_rounded,
   ];
   static const _labels = ['Home', 'Tasks', '', 'Journal', 'Social'];
 
@@ -351,10 +362,14 @@ class AppBottomNav extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8))
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Row(
@@ -368,9 +383,15 @@ class AppBottomNav extends StatelessWidget {
                   height: 52,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: [AppColors.purple, Color(0xFF8B7BE8)]),
+                    gradient: LinearGradient(
+                      colors: [AppColors.purple, Color(0xFF8B7BE8)],
+                    ),
                   ),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                 ),
               );
             }
@@ -379,7 +400,10 @@ class AppBottomNav extends StatelessWidget {
             return GestureDetector(
               onTap: () => onTap(navIdx),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: active ? const Color(0xFFEDEBFB) : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
@@ -387,7 +411,11 @@ class AppBottomNav extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(_icons[i], size: 21, color: active ? AppColors.purple : AppColors.sub),
+                    Icon(
+                      _icons[i],
+                      size: 21,
+                      color: active ? AppColors.purple : AppColors.sub,
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       _labels[i],

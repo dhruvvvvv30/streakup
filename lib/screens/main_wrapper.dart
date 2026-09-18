@@ -24,15 +24,13 @@ class _MainWrapperState extends State<MainWrapper> {
     final screens = [
       HomeScreen(onNavigateToTab: _goToTab),
       TodoScreen(key: _todoKey), // was: const TodoScreen()
-      JournalScreenContent(key: _journalKey), // was: const JournalScreenContent()
+      JournalScreenContent(
+        key: _journalKey,
+      ), // was: const JournalScreenContent()
       const CommunityScreenContent(),
     ];
     return GradientScaffold(
       endDrawer: const ProfileScreen(),
-      child: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
       bottomNavigationBar: AppBottomNav(
         index: _currentIndex,
         onTap: _goToTab,
@@ -50,6 +48,7 @@ class _MainWrapperState extends State<MainWrapper> {
           },
         ),
       ),
+      child: IndexedStack(index: _currentIndex, children: screens),
     );
   }
 }
