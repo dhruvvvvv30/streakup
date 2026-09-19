@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../service/profile_store.dart';
 import '../shared_widgets.dart';
 import '../service/group_service.dart';
 import '../service/app_events.dart';
 import 'group_members.dart';
 import 'add_member_screen.dart';
+import 'group_progress_card.dart';
+import 'group_progress_screen.dart';
 
 class GroupMember {
   final String name;
   final int xp;
   final bool isYou;
+  final String? avatarPath;
 
   const GroupMember({
     required this.name,
     required this.xp,
     this.isYou = false,
+    this.avatarPath,
   });
 }
 
@@ -56,6 +60,7 @@ class _GroupDetailScreenState
   late List<GroupMember> _members;
   late int _memberCount;
   late int _streak;
+  List<bool>? _week;
 
   RealtimeChannel? _channel;
 
@@ -115,31 +120,23 @@ class _GroupDetailScreenState
 
   Future<void> _refresh() async {
     try {
-      final stats =
-      await _groupService.fetchLeaderboard(
-        widget.groupId,
-      );
+      final stats = await _groupService.fetchLeaderboard(widget.groupId);
+      final streak = await _groupService.fetchGroupStreak(widget.groupId);
 
-      final streak =
-      await _groupService.fetchGroupStreak(
-        widget.groupId,
-      );
+      List<bool>? week;
+      try {
+        week = (await _groupService.fetchGroupProgress(widget.groupId)).week;
+      } catch (_) {}
 
       if (!mounted) return;
 
       setState(() {
         _members = stats
-            .map(
-              (s) => GroupMember(
-            name: s.name,
-            xp: s.xp,
-            isYou: s.isYou,
-          ),
-        )
+            .map((s) => GroupMember(name: s.name, xp: s.xp, isYou: s.isYou, avatarPath: s.avatarPath))
             .toList();
-
         _memberCount = stats.length;
         _streak = streak;
+        if (week != null) _week = week;
       });
     } catch (_) {}
   }
@@ -422,114 +419,20 @@ class _GroupDetailScreenState
   }
 
   Widget _buildProgressCard() {
-    final progress =
-    (_streak / widget.goalDays)
-        .clamp(0.0, 1.0);
-
-    final remaining =
-    (widget.goalDays - _streak)
-        .clamp(0, widget.goalDays);
-
-    return Container(
-      padding:
-      const EdgeInsets.all(18),
-      decoration:
-      softCard(radius: 22),
-      child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Group Progress',
-                style: GoogleFonts.nunito(
-                  fontSize: 16,
-                  fontWeight:
-                  FontWeight.w900,
-                  color:
-                  AppColors.ink,
-                ),
-              ),
-              RichText(
-                text: TextSpan(
-                  style:
-                  GoogleFonts.nunito(
-                    fontSize: 14,
-                    fontWeight:
-                    FontWeight.w800,
-                    color:
-                    AppColors.purple,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '$_streak',
-                    ),
-                    TextSpan(
-                      text:
-                      ' / ${widget.goalDays} days',
-                      style:
-                      GoogleFonts.nunito(
-                        fontSize: 13,
-                        fontWeight:
-                        FontWeight.w700,
-                        color:
-                        AppColors.sub,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return GroupProgressCard(
+      streak: _streak,
+      memberCount: _memberCount,
+      week: _week,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GroupProgressScreen(
+            groupId: widget.groupId,
+            groupName: widget.groupName,
+            tagline: widget.tagline,
+            icon: widget.icon,
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius:
-                  BorderRadius.circular(
-                    10,
-                  ),
-                  child:
-                  LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 10,
-                    backgroundColor:
-                    const Color(
-                      0xFFE2DDFE,
-                    ),
-                    valueColor:
-                    const AlwaysStoppedAnimation(
-                      AppColors.purple,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Icon(
-                Icons
-                    .local_fire_department_rounded,
-                color:
-                AppColors.orange,
-                size: 22,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Keep going! $remaining more days to reach ${widget.goalDays} days!',
-            style: GoogleFonts.nunito(
-              fontSize: 12.5,
-              color:
-              AppColors.sub,
-              fontWeight:
-              FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -598,19 +501,7 @@ class _GroupDetailScreenState
                           const SizedBox(
                             width: 10,
                           ),
-                          const CircleAvatar(
-                            radius: 20,
-                            backgroundColor:
-                            Color(
-                              0xFFEDEBFB,
-                            ),
-                            child: Icon(
-                              Icons
-                                  .person_rounded,
-                              color:
-                              AppColors.purple,
-                            ),
-                          ),
+                          UserAvatar(size: 40, avatarPath: m.avatarPath),
                           const SizedBox(
                             width: 12,
                           ),

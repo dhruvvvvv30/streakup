@@ -10,6 +10,7 @@ import 'leaderboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../service/app_events.dart';
 
+
 class CommunityScreenContent extends StatefulWidget {
   const CommunityScreenContent({super.key});
 
@@ -168,7 +169,7 @@ class _CommunityScreenContentState extends State<CommunityScreenContent> {
           streak: g.streak,
           memberCount: g.memberCount,
           members: stats
-              .map((s) => GroupMember(name: s.name, xp: s.xp, isYou: s.isYou))
+              .map((s) => GroupMember(name: s.name, xp: s.xp, isYou: s.isYou, avatarPath: s.avatarPath))
               .toList(),
         ),
       ),
