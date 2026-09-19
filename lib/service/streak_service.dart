@@ -30,45 +30,42 @@ class StreakService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    final taskRow = await _supabase.from('tasks').select('xp_awarded').eq('id', taskId).maybeSingle();
-    final alreadyAwarded = taskRow?['xp_awarded'] as bool? ?? false;
+    final now = DateTime.now();
+    final todayStr = _dateOnly(now);
+    final todayStartUtc = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+
+    // Was this task already completed (and XP given) TODAY?
+    final todays = await _supabase
+        .from('task_completion_events')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('task_id', taskId)
+        .gte('completed_at', todayStartUtc);
+    final awardedToday = (todays as List).isNotEmpty;
 
     await _supabase.from('tasks').update({'completed': newCompleted}).eq('id', taskId);
 
-    if (newCompleted && !alreadyAwarded) {
+    if (newCompleted && !awardedToday) {
       await _supabase.rpc('increment_xp', params: {'p_user_id': userId, 'p_amount': xpPerTask});
-      await _supabase.from('tasks').update({'xp_awarded': true}).eq('id', taskId);
       await _supabase.from('task_completion_events').insert({'user_id': userId, 'task_id': taskId});
-    } else if (!newCompleted && alreadyAwarded) {
+    } else if (!newCompleted && awardedToday) {
       await _supabase.rpc('increment_xp', params: {'p_user_id': userId, 'p_amount': -xpPerTask});
-      await _supabase.from('tasks').update({'xp_awarded': false}).eq('id', taskId);
-      // Remove today's completion event(s) for this task so the day can correctly
-      // stop counting if this was the only thing completed today.
-      final startOfDay = DateTime.now();
-      final todayStart = DateTime(startOfDay.year, startOfDay.month, startOfDay.day);
       await _supabase
           .from('task_completion_events')
           .delete()
           .eq('user_id', userId)
           .eq('task_id', taskId)
-          .gte('completed_at', todayStart.toIso8601String());
+          .gte('completed_at', todayStartUtc);
     }
 
-    // Re-evaluate today's streak_days row from actual completion events today,
-    // not from a one-way flag.
-    final today = DateTime.now();
-    final todayStr = _dateOnly(today);
-    final todayStart = DateTime(today.year, today.month, today.day);
-
+    // Re-evaluate today's streak row from today's events
     final eventsToday = await _supabase
         .from('task_completion_events')
         .select('id')
         .eq('user_id', userId)
-        .gte('completed_at', todayStart.toIso8601String());
+        .gte('completed_at', todayStartUtc);
 
-    final hasCompletionToday = (eventsToday as List).isNotEmpty;
-
-    if (hasCompletionToday) {
+    if ((eventsToday as List).isNotEmpty) {
       await _supabase.from('streak_days').upsert(
         {'user_id': userId, 'day': todayStr, 'completed': true},
         onConflict: 'user_id,day',

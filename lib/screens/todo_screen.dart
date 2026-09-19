@@ -38,6 +38,7 @@ class _Task {
   /// Repeating tasks never expire this way.
   bool get isExpired =>
       !repeats && DateTime.now().difference(createdAt).inHours >= 24;
+  bool get isDueToday => !repeats || repeatDays.contains(DateTime.now().weekday);
 }
 
 class _RepeatChoice {
@@ -77,25 +78,35 @@ class TodoScreenState extends State<TodoScreen> {
     if (userId == null) return;
 
     try {
+      final now = DateTime.now();
+      final cutoff = now.toUtc().subtract(const Duration(hours: 24)).toIso8601String();
+      final todayStartUtc = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+
       final response = await _supabase
           .from('tasks')
           .select()
           .eq('user_id', userId)
+          .or('repeats.eq.true,created_at.gt.$cutoff')
           .order('created_at', ascending: false);
+
+      // Which tasks were completed TODAY?
+      final events = await _supabase
+          .from('task_completion_events')
+          .select('task_id')
+          .eq('user_id', userId)
+          .gte('completed_at', todayStartUtc);
+      final doneToday = (events as List).map((e) => e['task_id'] as String).toSet();
 
       if (!mounted) return;
 
       final fetched = (response as List).map((row) => _Task.fromMap(row)).toList();
-      final expired = fetched.where((t) => t.isExpired).toList();
-      final active = fetched.where((t) => !t.isExpired).toList();
+      for (final t in fetched) {
+        if (t.repeats) t.completed = doneToday.contains(t.id); // resets every day
+      }
 
       setState(() {
-        _tasks = active;
+        _tasks = fetched.where((t) => !t.isExpired && t.isDueToday).toList();
       });
-
-      if (expired.isNotEmpty) {
-        _deleteExpiredTasks(expired);
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +191,8 @@ class TodoScreenState extends State<TodoScreen> {
           .single();
 
       setState(() {
-        _tasks.insert(0, _Task.fromMap(inserted));
+        final newTask = _Task.fromMap(inserted);
+        if (newTask.isDueToday) setState(() => _tasks.insert(0, newTask));
       });
     } catch (e) {
       if (mounted) {
