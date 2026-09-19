@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'settings.dart'; // Ensure this matches your settings file name
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'profile_detail_screen.dart';
+import 'streak_progress_screen.dart';
+import 'help_feedback_screen.dart';
+import 'about_streakup_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -72,18 +75,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Navigator.pop(context); // close the drawer first
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const ProfileDetailScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const ProfileDetailScreen(),
+                              ),
                             );
                           },
                           child: Row(
                             children: [
-                              Text('View your profile', style: GoogleFonts.nunito(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF6C5CE7),
-                              )),
+                              Text(
+                                'View your profile',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF6C5CE7),
+                                ),
+                              ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF6C5CE7)),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: Color(0xFF6C5CE7),
+                              ),
                             ],
                           ),
                         ),
@@ -113,21 +125,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.bar_chart_rounded,
                       title: 'Statistics',
                       subtitle: 'Badges, streaks, progress & more',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StreakProgressScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildDrawerSwitchItem(
                       icon: Icons.notifications_none_rounded,
                       title: 'Notifications',
                       subtitle: 'Turn notifications on or off',
                       value: _notificationsEnabled,
-                      onChanged: (val) => setState(() => _notificationsEnabled = val),
+                      onChanged: (val) =>
+                          setState(() => _notificationsEnabled = val),
                     ),
                     _buildDrawerSwitchItem(
                       icon: Icons.dark_mode_outlined,
                       title: 'Dark Style',
                       subtitle: 'Switch between light and dark',
                       value: _darkStyleEnabled,
-                      onChanged: (val) => setState(() => _darkStyleEnabled = val),
+                      onChanged: (val) =>
+                          setState(() => _darkStyleEnabled = val),
                     ),
                     _buildDrawerItem(
                       icon: Icons.settings_outlined,
@@ -148,13 +170,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.help_outline_rounded,
                       title: 'Help & Feedback',
                       subtitle: 'FAQs, report a problem, send feedback',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpFeedbackScreen(),
+                          ),
+                        );
+                      },
                     ),
+
                     _buildDrawerItem(
                       icon: Icons.info_outline_rounded,
                       title: 'About StreakUp',
                       subtitle: 'App version, terms & privacy, credits',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutStreakUpScreen(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -165,10 +204,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context: context,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Log out?'),
-                            content: const Text('Are you sure you want to log out?'),
+                            content: const Text(
+                              'Are you sure you want to log out?',
+                            ),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Log out')),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Log out'),
+                              ),
                             ],
                           ),
                         );
@@ -187,9 +234,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.logout_rounded, color: Color(0xFFFF4D4D), size: 22),
+                            const Icon(
+                              Icons.logout_rounded,
+                              color: Color(0xFFFF4D4D),
+                              size: 22,
+                            ),
                             const SizedBox(width: 12),
-                            Text('Log out', style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFFFF4D4D))),
+                            Text(
+                              'Log out',
+                              style: GoogleFonts.nunito(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFFFF4D4D),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -225,11 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: const Color(0xFFF1EFFF),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF6C5CE7),
-                size: 24,
-              ),
+              child: Icon(icon, color: const Color(0xFF6C5CE7), size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -285,11 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: const Color(0xFFF1EFFF),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF6C5CE7),
-              size: 24,
-            ),
+            child: Icon(icon, color: const Color(0xFF6C5CE7), size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -319,7 +369,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF6C5CE7),
+            activeTrackColor: const Color(0xFF6C5CE7),
           ),
         ],
       ),
