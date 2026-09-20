@@ -3,17 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth_gate.dart';
 import 'service/profile_store.dart';
+import 'service/widget_service.dart';
+import 'widgets/app_lifecycle_observer.dart';
+import 'dart:async';
+import '../service/supabase_config.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://dcuakwjmjzmnxktynzkz.supabase.co',
-    anonKey:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdWFrd2ptanptbnhrdHluemt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTU4MTIsImV4cCI6MjEwMzE3MTgxMn0.2ofpBfCIylxpyguic1Z-OSnu-D9bFuchh3F_v_mgNoQ',
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+
+  await WidgetService.registerBackgroundCallback();
+  await WidgetService.syncPendingToggles(); // catch up on anything missed while closed
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -43,7 +46,11 @@ Future<void> main() async {
     await ProfileStore.instance.load();
   }
 
-  runApp(const MyApp());
+  runApp(
+    AppLifecycleObserver(
+      child: const MyApp(),
+    ),
+  );
 }
 
 final supabase = Supabase.instance.client;

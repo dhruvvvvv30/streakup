@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'widget_service.dart';
 
 class HomeData {
   final String fullName;
@@ -105,7 +106,7 @@ class HomeService {
       cursor = cursor.subtract(const Duration(days: 1));
     }
 
-    // Next pending task
+    // Next pending task (for the "Upcoming" card)
     String? upcomingTitle;
     String? upcomingCategory;
     try {
@@ -123,6 +124,43 @@ class HomeService {
       }
     } catch (_) {
       // tasks table/columns may differ — fails silently, Upcoming card shows empty state
+    }
+
+    // Full list of today's tasks, for the home-screen widget
+    // Full list of today's tasks, for the home-screen widget
+    try {
+      final startOfDay = DateTime(today.year, today.month, today.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final todayTaskRows = await _supabase
+          .from('tasks')
+          .select('id, title, completed')
+          .eq('user_id', userId)
+          .gte('created_at', startOfDay.toIso8601String())
+          .lt('created_at', endOfDay.toIso8601String())
+          .order('created_at', ascending: true);
+
+     // print('🟡 [Widget] Fetched ${(todayTaskRows as List).length} tasks for $todayStr');
+
+      final todayTasks = todayTaskRows
+          .map((r) => {
+        'id': r['id'].toString(),
+        'title': r['title'] as String? ?? '',
+        'done': r['completed'] as bool? ?? false,
+      })
+          .toList();
+
+      //print('🟡 [Widget] Pushing streak=$currentStreak tasks=$todayTasks');
+
+      await WidgetService.pushToWidget(
+        streakCount: currentStreak,
+        todayTasks: todayTasks,
+      );
+
+     // print('🟢 [Widget] Push succeeded');
+    } catch (e, st) {
+    //  print('🔴 [Widget] PUSH FAILED: $e');
+      // print(st);
     }
 
     return HomeData(

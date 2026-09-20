@@ -5,6 +5,11 @@ import 'streak_progress_screen.dart';
 import 'calendar_screen.dart';
 import '../service/streak_service.dart';
 import '../shared_widgets.dart';
+import '../service/streak_service.dart';
+import '../service/home_service.dart';
+import '../service/streak_service.dart';
+import '../shared_widgets.dart';
+import '../service/widget_service.dart';
 
 class _Task {
   final String id;
@@ -200,10 +205,11 @@ class TodoScreenState extends State<TodoScreen> {
           .select()
           .single();
 
-      setState(() {
-        final newTask = _Task.fromMap(inserted);
-        if (newTask.isDueToday) setState(() => _tasks.insert(0, newTask));
-      });
+      final newTask = _Task.fromMap(inserted);
+      if (mounted && newTask.isDueToday) {
+        setState(() => _tasks.insert(0, newTask));
+      }
+      await WidgetService.refreshFromServer();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -388,6 +394,7 @@ class TodoScreenState extends State<TodoScreen> {
           .from('tasks')
           .update({'title': newTitle})
           .eq('id', task.id);
+      await WidgetService.refreshFromServer();
     } catch (e) {
       setState(() => task.title = oldTitle);
       if (mounted) {
@@ -421,6 +428,9 @@ class TodoScreenState extends State<TodoScreen> {
 
     try {
       await _supabase.from('tasks').delete().eq('id', task.id);
+      try {
+        await HomeService().fetchHomeData();
+      } catch (_) {}
     } catch (e) {
       setState(() => _tasks.insert(removedIndex, task));
       if (mounted) {
@@ -479,6 +489,7 @@ class TodoScreenState extends State<TodoScreen> {
 
     try {
       await _supabase.from('tasks').delete().inFilter('id', idsToDelete);
+      await WidgetService.refreshFromServer();
     } catch (e) {
       setState(() {
         _tasks.insertAll(0, removedTasks);
@@ -540,6 +551,19 @@ class TodoScreenState extends State<TodoScreen> {
   void initState() {
     super.initState();
     _fetchAll();
+    WidgetService.dataVersion.addListener(_onWidgetSynced);
+  }
+
+  @override
+  void dispose() {
+    WidgetService.dataVersion.removeListener(_onWidgetSynced);
+    super.dispose();
+  }
+
+  void _onWidgetSynced() {
+    if (!mounted) return;
+    _fetchTasks();
+    _fetchStats();
   }
 
   @override

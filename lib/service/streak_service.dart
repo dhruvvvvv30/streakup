@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'widget_service.dart';
+import 'home_service.dart';
 
 class StreakStats {
   final String fullName;
@@ -32,7 +34,9 @@ class StreakService {
 
     final now = DateTime.now();
     final todayStr = _dateOnly(now);
-    final todayStartUtc = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+    final todayStartUtc = DateTime(now.year, now.month, now.day)
+        .toUtc()
+        .toIso8601String();
 
     // Was this task already completed (and XP given) TODAY?
     final todays = await _supabase
@@ -43,13 +47,17 @@ class StreakService {
         .gte('completed_at', todayStartUtc);
     final awardedToday = (todays as List).isNotEmpty;
 
-    await _supabase.from('tasks').update({'completed': newCompleted}).eq('id', taskId);
+    await _supabase.from('tasks').update({'completed': newCompleted}).eq(
+        'id', taskId);
 
     if (newCompleted && !awardedToday) {
-      await _supabase.rpc('increment_xp', params: {'p_user_id': userId, 'p_amount': xpPerTask});
-      await _supabase.from('task_completion_events').insert({'user_id': userId, 'task_id': taskId});
+      await _supabase.rpc(
+          'increment_xp', params: {'p_user_id': userId, 'p_amount': xpPerTask});
+      await _supabase.from('task_completion_events').insert(
+          {'user_id': userId, 'task_id': taskId});
     } else if (!newCompleted && awardedToday) {
-      await _supabase.rpc('increment_xp', params: {'p_user_id': userId, 'p_amount': -xpPerTask});
+      await _supabase.rpc('increment_xp',
+          params: {'p_user_id': userId, 'p_amount': -xpPerTask});
       await _supabase
           .from('task_completion_events')
           .delete()
@@ -71,7 +79,17 @@ class StreakService {
         onConflict: 'user_id,day',
       );
     } else {
-      await _supabase.from('streak_days').delete().eq('user_id', userId).eq('day', todayStr);
+      await _supabase.from('streak_days').delete().eq('user_id', userId).eq(
+          'day', todayStr);
+    }
+
+    // Keep the home-screen widget in sync with this change.
+// Keep the home-screen widget in sync with this change.
+    try {
+      await HomeService().fetchHomeData();
+      print('🟢 [Toggle] Widget refresh triggered after task toggle');
+    } catch (e) {
+      print('🔴 [Toggle] Widget refresh failed: $e');
     }
   }
 
