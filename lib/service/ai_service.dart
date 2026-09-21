@@ -121,4 +121,50 @@ class AIService {
       return [];
     }
   }
+
+  // --------------------------------------------------
+  // AI TASK RECOMMENDATIONS
+  // --------------------------------------------------
+
+  static Future<List<Map<String, dynamic>>> getRecommendations({
+    required String userId,
+    required List<Map<String, dynamic>> userTasks,
+    required List<Map<String, dynamic>> friends,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/recommendations'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': userId,
+              'user_tasks': userTasks,
+              'friends': friends,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final recommendations = data['recommendations'];
+
+        if (recommendations is List) {
+          return recommendations
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
+        }
+      }
+
+      print('Recommendations API error: ${response.statusCode}');
+      print('Recommendations API response: ${response.body}');
+
+      return [];
+    } catch (e) {
+      print('Recommendations API connection error: $e');
+
+      return [];
+    }
+  }
 }

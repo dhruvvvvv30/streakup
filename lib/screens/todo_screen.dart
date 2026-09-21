@@ -4,10 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'streak_progress_screen.dart';
 import 'calendar_screen.dart';
 import '../service/streak_service.dart';
-import '../shared_widgets.dart';
-import '../service/streak_service.dart';
 import '../service/home_service.dart';
-import '../service/streak_service.dart';
+import '../service/ai_service.dart';
 import '../shared_widgets.dart';
 import '../service/widget_service.dart';
 
@@ -44,12 +42,15 @@ class _Task {
   /// Repeating tasks never expire this way.
   bool get isExpired =>
       !repeats && DateTime.now().difference(createdAt).inHours >= 24;
-  bool get isDueToday => !repeats || repeatDays.contains(DateTime.now().weekday);
+
+  bool get isDueToday =>
+      !repeats || repeatDays.contains(DateTime.now().weekday);
 }
 
 class _RepeatChoice {
   final bool repeats;
   final List<int> days;
+
   _RepeatChoice({required this.repeats, required this.days});
 }
 
@@ -65,28 +66,67 @@ enum _Filter { all, pending, completed }
 class TodoScreenState extends State<TodoScreen> {
   final _supabase = Supabase.instance.client;
   final _streakService = StreakService();
+
   List<_Task> _tasks = [];
   StreakStats? _stats;
+
   bool _loading = true;
   _Filter _filter = _Filter.all;
+
+  // --------------------------------------------------
+  // AI RECOMMENDATIONS
+  // --------------------------------------------------
+
+  List<Map<String, dynamic>> _recommendations = [];
+  bool _recommendationsLoading = false;
+
+  // --------------------------------------------------
+  // SELECTION MODE
+  // --------------------------------------------------
 
   bool _selectionMode = false;
   final Set<String> _selectedTaskIds = {};
 
+  // --------------------------------------------------
+  // FETCH EVERYTHING
+  // --------------------------------------------------
+
   Future<void> _fetchAll() async {
     setState(() => _loading = true);
+
     await Future.wait([_fetchTasks(), _fetchStats()]);
-    if (mounted) setState(() => _loading = false);
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+
+    // Recommendations are loaded separately so a slow AI request
+    // does not block the Todo screen from opening.
+    _fetchRecommendations();
   }
+
+  // --------------------------------------------------
+  // FETCH TASKS
+  // --------------------------------------------------
 
   Future<void> _fetchTasks() async {
     final userId = _supabase.auth.currentUser?.id;
+
     if (userId == null) return;
 
     try {
       final now = DateTime.now();
-      final cutoff = now.toUtc().subtract(const Duration(hours: 24)).toIso8601String();
-      final todayStartUtc = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+
+      final cutoff = now
+          .toUtc()
+          .subtract(const Duration(hours: 24))
+          .toIso8601String();
+
+      final todayStartUtc = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).toUtc().toIso8601String();
 
       final response = await _supabase
           .from('tasks')
@@ -101,15 +141,23 @@ class TodoScreenState extends State<TodoScreen> {
           .select('task_id')
           .eq('user_id', userId)
           .gte('completed_at', todayStartUtc);
-      final doneToday = (events as List).map((e) => e['task_id'] as String).toSet();
+
+      final doneToday = (events as List)
+          .map((e) => e['task_id'] as String)
+          .toSet();
 
       if (!mounted) return;
 
-      final fetched = (response as List).map((row) => _Task.fromMap(row)).toList();
+      final fetched = (response as List)
+          .map((row) => _Task.fromMap(row))
+          .toList();
+
       for (final t in fetched) {
-        if (t.repeats) t.completed = doneToday.contains(t.id); // resets every day
+        if (t.repeats) {
+          t.completed = doneToday.contains(t.id);
+        }
       }
-      
+
       setState(() {
         _tasks = fetched.where((t) => !t.isExpired && t.isDueToday).toList();
       });
@@ -122,6 +170,10 @@ class TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  // --------------------------------------------------
+  // DELETE EXPIRED TASKS
+  // --------------------------------------------------
+
   Future<void> _deleteExpiredTasks(List<_Task> expired) async {
     try {
       await _supabase
@@ -129,32 +181,312 @@ class TodoScreenState extends State<TodoScreen> {
           .delete()
           .inFilter('id', expired.map((t) => t.id).toList());
     } catch (_) {
-      // Non-fatal: if this fails they'll just get filtered out again next fetch.
+      // Non-fatal: if this fails they'll just get filtered
+      // out again next fetch.
     }
   }
+
+  // --------------------------------------------------
+  // FETCH STATS
+  // --------------------------------------------------
 
   Future<void> _fetchStats() async {
     try {
       final stats = await _streakService.fetchStats();
-      if (mounted) setState(() => _stats = stats);
+
+      if (mounted) {
+        setState(() => _stats = stats);
+      }
     } catch (e) {
-      // Non-fatal ? info card just falls back to placeholders if this fails
+      // Non-fatal.
+      // Info card just falls back to placeholders if this fails.
     }
   }
+
+  // ==================================================
+  // AI TASK RECOMMENDATIONS
+  // ==================================================
+
+  Future<void> _fetchRecommendations() async {
+    final userId = _supabase.auth.currentUser?.id;
+
+    if (userId == null) return;
+
+    if (mounted) {
+      setState(() {
+        _recommendationsLoading = true;
+      });
+    }
+
+    try {
+      // --------------------------------------------------
+      // 1. GET USER'S TASKS
+      // --------------------------------------------------
+      //
+      // We get the user's task titles and completion history.
+      //
+      // Completion events are sent as repeated occurrences so
+      // the recommendation engine can measure how often the
+      // user does each activity.
+
+      final userTaskRows = await _supabase
+          .from('tasks')
+          .select('id, title, completed')
+          .eq('user_id', userId);
+
+      final userTaskTitlesById = <String, String>{};
+
+      final userTasks = <Map<String, dynamic>>[];
+
+      for (final row in userTaskRows as List) {
+        final taskId = row['id']?.toString();
+        final title = row['title']?.toString();
+
+        if (taskId != null &&
+            taskId.isNotEmpty &&
+            title != null &&
+            title.trim().isNotEmpty) {
+          userTaskTitlesById[taskId] = title;
+
+          // Keep existing tasks in the user's profile so
+          // they are not recommended again.
+          userTasks.add({'task': title, 'completed': true});
+        }
+      }
+
+      // --------------------------------------------------
+      // 2. GET USER'S COMPLETION HISTORY
+      // --------------------------------------------------
+
+      final userEvents = await _supabase
+          .from('task_completion_events')
+          .select('task_id')
+          .eq('user_id', userId);
+
+      for (final event in userEvents as List) {
+        final taskId = event['task_id']?.toString();
+
+        if (taskId == null) continue;
+
+        final title = userTaskTitlesById[taskId];
+
+        if (title == null || title.trim().isEmpty) {
+          continue;
+        }
+
+        userTasks.add({'task': title, 'completed': true});
+      }
+
+      // --------------------------------------------------
+      // 3. GET ACTUAL FRIEND IDs
+      // --------------------------------------------------
+      //
+      // friends.friend_id is the friend's Supabase auth ID.
+      // This is what we send to the recommendation engine.
+
+      final friendRows = await _supabase
+          .from('friends')
+          .select('friend_id')
+          .eq('user_id', userId);
+
+      final friendIds = (friendRows as List)
+          .map((row) => row['friend_id']?.toString())
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toList();
+
+      // No friends = no recommendations.
+      if (friendIds.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _recommendations = [];
+            _recommendationsLoading = false;
+          });
+        }
+
+        return;
+      }
+
+      // --------------------------------------------------
+      // 4. GET FRIEND TASKS
+      // --------------------------------------------------
+
+      final friendTaskRows = await _supabase
+          .from('tasks')
+          .select('id, user_id, title')
+          .inFilter('user_id', friendIds);
+
+      final taskTitlesById = <String, String>{};
+
+      for (final row in friendTaskRows as List) {
+        final taskId = row['id']?.toString();
+        final title = row['title']?.toString();
+
+        if (taskId != null &&
+            taskId.isNotEmpty &&
+            title != null &&
+            title.trim().isNotEmpty) {
+          taskTitlesById[taskId] = title;
+        }
+      }
+
+      // --------------------------------------------------
+      // 5. GET FRIEND COMPLETION HISTORY
+      // --------------------------------------------------
+      //
+      // Every completion event is sent as one completed
+      // occurrence so the recommendation engine can calculate
+      // task frequency.
+
+      final friendEvents = await _supabase
+          .from('task_completion_events')
+          .select('user_id, task_id')
+          .inFilter('user_id', friendIds);
+
+      final friends = <Map<String, dynamic>>[];
+
+      for (final friendId in friendIds) {
+        final friendTasks = <Map<String, dynamic>>[];
+
+        for (final event in friendEvents as List) {
+          if (event['user_id']?.toString() != friendId) {
+            continue;
+          }
+
+          final taskId = event['task_id']?.toString();
+
+          if (taskId == null) continue;
+
+          final title = taskTitlesById[taskId];
+
+          if (title == null || title.trim().isEmpty) {
+            continue;
+          }
+
+          friendTasks.add({'task': title, 'completed': true});
+        }
+
+        friends.add({'friend_id': friendId, 'tasks': friendTasks});
+      }
+
+      // --------------------------------------------------
+      // 6. SEND EVERYTHING TO FLASK
+      // --------------------------------------------------
+
+      final recommendations = await AIService.getRecommendations(
+        userId: userId,
+        userTasks: userTasks,
+        friends: friends,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _recommendations = recommendations;
+        _recommendationsLoading = false;
+      });
+    } catch (e) {
+      print('Failed to load recommendations: $e');
+
+      if (mounted) {
+        setState(() {
+          _recommendations = [];
+          _recommendationsLoading = false;
+        });
+      }
+    }
+  }
+
+  // ==================================================
+  // ADD RECOMMENDED TASK
+  // ==================================================
+
+  Future<void> _addRecommendedTask(String title) async {
+    final userId = _supabase.auth.currentUser?.id;
+
+    if (userId == null || title.trim().isEmpty) {
+      return;
+    }
+
+    // Check if this task already exists in the current Todo list.
+    final alreadyExists = _tasks.any(
+      (task) => task.title.trim().toLowerCase() == title.trim().toLowerCase(),
+    );
+
+    if (alreadyExists) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You already have this task in your list.'),
+          ),
+        );
+      }
+
+      return;
+    }
+
+    try {
+      // Recommendations are added as normal one-time tasks.
+      final inserted = await _supabase
+          .from('tasks')
+          .insert({
+            'user_id': userId,
+            'title': title.trim(),
+            'completed': false,
+            'repeats': false,
+            'repeat_days': null,
+          })
+          .select()
+          .single();
+
+      final newTask = _Task.fromMap(inserted);
+
+      if (mounted && newTask.isDueToday) {
+        setState(() {
+          _tasks.insert(0, newTask);
+        });
+      }
+
+      await WidgetService.refreshFromServer();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Added "$title" to your Todo list.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add recommended task: $e')),
+        );
+      }
+    }
+  }
+
+  // --------------------------------------------------
+  // VISIBLE TASKS
+  // --------------------------------------------------
 
   List<_Task> get _visibleTasks {
     switch (_filter) {
       case _Filter.pending:
         return _tasks.where((t) => !t.completed).toList();
+
       case _Filter.completed:
         return _tasks.where((t) => t.completed).toList();
+
       case _Filter.all:
         return _tasks;
     }
   }
 
+  // --------------------------------------------------
+  // ADD TASK
+  // --------------------------------------------------
+
   Future<void> _addTask() async {
     final controller = TextEditingController();
+
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -184,12 +516,18 @@ class TodoScreenState extends State<TodoScreen> {
       ),
     );
 
-    if (title == null || title.isEmpty || !mounted) return;
+    if (title == null || title.isEmpty || !mounted) {
+      return;
+    }
 
     final repeatResult = await _showRepeatDialog();
-    if (repeatResult == null) return;
+
+    if (repeatResult == null) {
+      return;
+    }
 
     final userId = _supabase.auth.currentUser?.id;
+
     if (userId == null) return;
 
     try {
@@ -206,9 +544,13 @@ class TodoScreenState extends State<TodoScreen> {
           .single();
 
       final newTask = _Task.fromMap(inserted);
+
       if (mounted && newTask.isDueToday) {
-        setState(() => _tasks.insert(0, newTask));
+        setState(() {
+          _tasks.insert(0, newTask);
+        });
       }
+
       await WidgetService.refreshFromServer();
     } catch (e) {
       if (mounted) {
@@ -223,10 +565,19 @@ class TodoScreenState extends State<TodoScreen> {
     await _addTask();
   }
 
+  // --------------------------------------------------
+  // REPEAT DIALOG
+  // --------------------------------------------------
+
   Future<_RepeatChoice?> _showRepeatDialog() async {
-    // 0 = Just today, 1 = Every day, 2 = Specific days
+    // 0 = Just today
+    // 1 = Every day
+    // 2 = Specific days
+
     int mode = 0;
+
     final selectedDays = <int>{};
+
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return showDialog<_RepeatChoice>(
@@ -253,7 +604,9 @@ class TodoScreenState extends State<TodoScreen> {
                 value: 0,
                 groupValue: mode,
                 activeColor: const Color(0xFF6C5CE7),
-                onChanged: (v) => setDialogState(() => mode = 0),
+                onChanged: (v) {
+                  setDialogState(() => mode = 0);
+                },
               ),
               RadioListTile<int>(
                 contentPadding: EdgeInsets.zero,
@@ -261,7 +614,9 @@ class TodoScreenState extends State<TodoScreen> {
                 value: 1,
                 groupValue: mode,
                 activeColor: const Color(0xFF6C5CE7),
-                onChanged: (v) => setDialogState(() => mode = 1),
+                onChanged: (v) {
+                  setDialogState(() => mode = 1);
+                },
               ),
               RadioListTile<int>(
                 contentPadding: EdgeInsets.zero,
@@ -269,7 +624,9 @@ class TodoScreenState extends State<TodoScreen> {
                 value: 2,
                 groupValue: mode,
                 activeColor: const Color(0xFF6C5CE7),
-                onChanged: (v) => setDialogState(() => mode = 2),
+                onChanged: (v) {
+                  setDialogState(() => mode = 2);
+                },
               ),
               if (mode == 2) ...[
                 const SizedBox(height: 8),
@@ -279,6 +636,7 @@ class TodoScreenState extends State<TodoScreen> {
                   children: List.generate(7, (i) {
                     final dayNum = i + 1;
                     final selected = selectedDays.contains(dayNum);
+
                     return FilterChip(
                       label: Text(dayLabels[i]),
                       selected: selected,
@@ -321,6 +679,7 @@ class TodoScreenState extends State<TodoScreen> {
                       ),
                     ),
                   );
+
                   return;
                 }
 
@@ -349,8 +708,13 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  // --------------------------------------------------
+  // EDIT TASK
+  // --------------------------------------------------
+
   Future<void> _editTask(_Task task) async {
     final controller = TextEditingController(text: task.title);
+
     final newTitle = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -383,10 +747,12 @@ class TodoScreenState extends State<TodoScreen> {
     if (newTitle == null ||
         newTitle.isEmpty ||
         newTitle == task.title ||
-        !mounted)
+        !mounted) {
       return;
+    }
 
     final oldTitle = task.title;
+
     setState(() => task.title = newTitle);
 
     try {
@@ -394,9 +760,11 @@ class TodoScreenState extends State<TodoScreen> {
           .from('tasks')
           .update({'title': newTitle})
           .eq('id', task.id);
+
       await WidgetService.refreshFromServer();
     } catch (e) {
       setState(() => task.title = oldTitle);
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -405,15 +773,22 @@ class TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  // --------------------------------------------------
+  // TOGGLE TASK
+  // --------------------------------------------------
+
   Future<void> _toggleTask(_Task task) async {
     final newValue = !task.completed;
+
     setState(() => task.completed = newValue);
 
     try {
       await _streakService.toggleTaskCompletion(task.id, newValue);
-      await _fetchStats(); // refresh streak/XP shown on this screen too
+
+      await _fetchStats();
     } catch (e) {
       setState(() => task.completed = !newValue);
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -422,17 +797,26 @@ class TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  // --------------------------------------------------
+  // DELETE TASK
+  // --------------------------------------------------
+
   Future<void> _deleteTask(_Task task) async {
     final removedIndex = _tasks.indexOf(task);
+
     setState(() => _tasks.remove(task));
 
     try {
       await _supabase.from('tasks').delete().eq('id', task.id);
+
       try {
         await HomeService().fetchHomeData();
       } catch (_) {}
     } catch (e) {
-      setState(() => _tasks.insert(removedIndex, task));
+      setState(() {
+        _tasks.insert(removedIndex, task);
+      });
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -440,6 +824,10 @@ class TodoScreenState extends State<TodoScreen> {
       }
     }
   }
+
+  // --------------------------------------------------
+  // SELECTION MODE
+  // --------------------------------------------------
 
   void _toggleSelectionMode() {
     setState(() {
@@ -450,8 +838,10 @@ class TodoScreenState extends State<TodoScreen> {
 
   void _toggleSelectAll() {
     final tasks = _visibleTasks;
+
     final allSelected =
         tasks.isNotEmpty && tasks.every((t) => _selectedTaskIds.contains(t.id));
+
     setState(() {
       if (allSelected) {
         _selectedTaskIds.clear();
@@ -473,27 +863,35 @@ class TodoScreenState extends State<TodoScreen> {
     });
   }
 
+  // --------------------------------------------------
+  // DELETE SELECTED
+  // --------------------------------------------------
+
   Future<void> _deleteSelectedTasks() async {
     if (_selectedTaskIds.isEmpty) return;
 
     final idsToDelete = _selectedTaskIds.toList();
+
     final removedTasks = _tasks
         .where((t) => idsToDelete.contains(t.id))
         .toList();
 
     setState(() {
       _tasks.removeWhere((t) => idsToDelete.contains(t.id));
+
       _selectedTaskIds.clear();
       _selectionMode = false;
     });
 
     try {
       await _supabase.from('tasks').delete().inFilter('id', idsToDelete);
+
       await WidgetService.refreshFromServer();
     } catch (e) {
       setState(() {
         _tasks.insertAll(0, removedTasks);
       });
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -502,8 +900,15 @@ class TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  // --------------------------------------------------
+  // DATE HELPERS
+  // --------------------------------------------------
+
   String _ordinal(int day) {
-    if (day >= 11 && day <= 13) return '${day}th';
+    if (day >= 11 && day <= 13) {
+      return '${day}th';
+    }
+
     switch (day % 10) {
       case 1:
         return '${day}st';
@@ -526,6 +931,7 @@ class TodoScreenState extends State<TodoScreen> {
       'Saturday',
       'Sunday',
     ];
+
     return names[weekday - 1];
   }
 
@@ -544,27 +950,41 @@ class TodoScreenState extends State<TodoScreen> {
       'Nov',
       'Dec',
     ];
+
     return names[month - 1];
   }
+
+  // --------------------------------------------------
+  // INIT
+  // --------------------------------------------------
 
   @override
   void initState() {
     super.initState();
+
     _fetchAll();
+
     WidgetService.dataVersion.addListener(_onWidgetSynced);
   }
 
   @override
   void dispose() {
     WidgetService.dataVersion.removeListener(_onWidgetSynced);
+
     super.dispose();
   }
 
   void _onWidgetSynced() {
     if (!mounted) return;
+
     _fetchTasks();
     _fetchStats();
+    _fetchRecommendations();
   }
+
+  // --------------------------------------------------
+  // BUILD
+  // --------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -586,7 +1006,9 @@ class TodoScreenState extends State<TodoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppTopBar(),
+
             const SizedBox(height: 12),
+
             Text(
               'To-do List',
               style: GoogleFonts.schoolbell(
@@ -595,15 +1017,31 @@ class TodoScreenState extends State<TodoScreen> {
                 color: const Color(0xFF1E1C3B),
               ),
             ),
+
             const SizedBox(height: 16),
+
             _buildInfoCards(now),
+
             const SizedBox(height: 16),
+
             _buildFilterTabs(),
+
             const SizedBox(height: 8),
+
             _buildSelectionBar(),
+
             const SizedBox(height: 4),
+
             _buildAddTaskRow(),
+
             const SizedBox(height: 12),
+
+            // NEW:
+            // AI recommendation section
+            _buildRecommendations(),
+
+            const SizedBox(height: 12),
+
             _buildTaskList(),
           ],
         ),
@@ -611,8 +1049,13 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  // --------------------------------------------------
+  // INFO CARDS
+  // --------------------------------------------------
+
   Widget _buildInfoCards(DateTime now) {
     final streakValue = _stats != null ? '${_stats!.currentStreak}' : '?';
+
     final xpValue = _stats != null ? '${_stats!.totalXp}+ Xp' : '? Xp';
 
     return Row(
@@ -634,7 +1077,9 @@ class TodoScreenState extends State<TodoScreen> {
             ),
           ),
         ),
+
         const SizedBox(width: 12),
+
         Expanded(
           child: GestureDetector(
             onTap: () async {
@@ -642,7 +1087,8 @@ class TodoScreenState extends State<TodoScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => const StreakProgressScreen()),
               );
-              _fetchStats(); // refresh in case streak/XP changed while on that screen
+
+              _fetchStats();
             },
             child: _infoCard(
               icon: Icons.local_fire_department_rounded,
@@ -658,6 +1104,10 @@ class TodoScreenState extends State<TodoScreen> {
       ],
     );
   }
+
+  // --------------------------------------------------
+  // INFO CARD
+  // --------------------------------------------------
 
   Widget _infoCard({
     required IconData icon,
@@ -689,7 +1139,9 @@ class TodoScreenState extends State<TodoScreen> {
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
+
               const SizedBox(width: 10),
+
               Expanded(
                 child: topLineSuffix == null
                     ? Text(
@@ -711,7 +1163,9 @@ class TodoScreenState extends State<TodoScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 6),
+
           Text(
             subLine,
             style: GoogleFonts.nunito(
@@ -720,7 +1174,9 @@ class TodoScreenState extends State<TodoScreen> {
               color: const Color(0xFF8B8C9E),
             ),
           ),
+
           const Divider(height: 18, color: Color(0xFFECEFFC)),
+
           Row(
             children: [
               Expanded(
@@ -733,6 +1189,7 @@ class TodoScreenState extends State<TodoScreen> {
                   ),
                 ),
               ),
+
               const Icon(
                 Icons.chevron_right_rounded,
                 size: 16,
@@ -745,9 +1202,14 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  // --------------------------------------------------
+  // FILTER TABS
+  // --------------------------------------------------
+
   Widget _buildFilterTabs() {
     Widget tab(String label, _Filter value) {
       final active = _filter == value;
+
       return Expanded(
         child: GestureDetector(
           onTap: () => setState(() => _filter = value),
@@ -791,11 +1253,13 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  /// Row under the filter tabs. Idle: a single "select mode" icon button.
-  /// Active: select-all icon, a delete icon (with count badge), and a
-  /// close icon to cancel — all icons, no text buttons.
+  // --------------------------------------------------
+  // SELECTION BAR
+  // --------------------------------------------------
+
   Widget _buildSelectionBar() {
     final tasks = _visibleTasks;
+
     final allSelected =
         tasks.isNotEmpty && tasks.every((t) => _selectedTaskIds.contains(t.id));
 
@@ -828,6 +1292,7 @@ class TodoScreenState extends State<TodoScreen> {
             color: const Color(0xFF6C5CE7),
           ),
         ),
+
         Row(
           children: [
             if (_selectedTaskIds.isNotEmpty)
@@ -842,6 +1307,7 @@ class TodoScreenState extends State<TodoScreen> {
                       color: Colors.red,
                     ),
                   ),
+
                   Positioned(
                     right: 4,
                     top: 4,
@@ -868,6 +1334,7 @@ class TodoScreenState extends State<TodoScreen> {
                   ),
                 ],
               ),
+
             IconButton(
               onPressed: _toggleSelectionMode,
               tooltip: 'Cancel',
@@ -878,6 +1345,10 @@ class TodoScreenState extends State<TodoScreen> {
       ],
     );
   }
+
+  // --------------------------------------------------
+  // ADD TASK ROW
+  // --------------------------------------------------
 
   Widget _buildAddTaskRow() {
     return GestureDetector(
@@ -904,7 +1375,9 @@ class TodoScreenState extends State<TodoScreen> {
                 size: 20,
               ),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: Text(
                 'Add New Task',
@@ -921,8 +1394,199 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  // ==================================================
+  // AI RECOMMENDATIONS UI
+  // ==================================================
+
+  Widget _buildRecommendations() {
+    // --------------------------------------------------
+    // LOADING
+    // --------------------------------------------------
+
+    if (_recommendationsLoading) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFECEFFC), width: 1.2),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF6C5CE7),
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Text(
+              'Finding tasks you might enjoy...',
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF8B8C9E),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // --------------------------------------------------
+    // NO RECOMMENDATIONS
+    // --------------------------------------------------
+
+    if (_recommendations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // --------------------------------------------------
+    // RECOMMENDATION CARD
+    // --------------------------------------------------
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFECEFFC), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDEBFB),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFF6C5CE7),
+                  size: 19,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Suggested for you',
+                      style: GoogleFonts.nunito(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF1E1C3B),
+                      ),
+                    ),
+
+                    Text(
+                      'Based on tasks your friends enjoy',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF8B8C9E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Recommendations
+          ..._recommendations.map((recommendation) {
+            final title = recommendation['title']?.toString() ?? '';
+
+            final similarFriends =
+                recommendation['similar_friends']?.toString() ?? '0';
+
+            if (title.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _addRecommendedTask(title),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F7FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.lightbulb_outline_rounded,
+                        color: Color(0xFF6C5CE7),
+                        size: 19,
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.nunito(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E1C3B),
+                          ),
+                        ),
+                      ),
+
+                      Text(
+                        '$similarFriends friend${similarFriends == '1' ? '' : 's'}',
+                        style: GoogleFonts.nunito(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF8B8C9E),
+                        ),
+                      ),
+
+                      const SizedBox(width: 6),
+
+                      const Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: Color(0xFF6C5CE7),
+                        size: 19,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // TASK LIST
+  // --------------------------------------------------
+
   Widget _buildTaskList() {
     final tasks = _visibleTasks;
+
     if (tasks.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -947,7 +1611,9 @@ class TodoScreenState extends State<TodoScreen> {
       child: Column(
         children: List.generate(tasks.length, (i) {
           final task = tasks[i];
+
           final isSelected = _selectedTaskIds.contains(task.id);
+
           return Column(
             children: [
               Padding(
@@ -999,7 +1665,9 @@ class TodoScreenState extends State<TodoScreen> {
                                   : null),
                       ),
                     ),
+
                     const SizedBox(width: 14),
+
                     Expanded(
                       child: GestureDetector(
                         onTap: _selectionMode
@@ -1022,6 +1690,7 @@ class TodoScreenState extends State<TodoScreen> {
                                     : null,
                               ),
                             ),
+
                             if (task.repeats && task.repeatDays.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 2),
@@ -1032,7 +1701,9 @@ class TodoScreenState extends State<TodoScreen> {
                                       size: 12,
                                       color: Color(0xFF6C5CE7),
                                     ),
+
                                     const SizedBox(width: 3),
+
                                     Text(
                                       _repeatLabel(task.repeatDays),
                                       style: GoogleFonts.nunito(
@@ -1048,6 +1719,7 @@ class TodoScreenState extends State<TodoScreen> {
                         ),
                       ),
                     ),
+
                     if (!_selectionMode)
                       PopupMenuButton<String>(
                         icon: const Icon(
@@ -1055,8 +1727,13 @@ class TodoScreenState extends State<TodoScreen> {
                           color: Color(0xFF8B8C9E),
                         ),
                         onSelected: (value) {
-                          if (value == 'edit') _editTask(task);
-                          if (value == 'delete') _deleteTask(task);
+                          if (value == 'edit') {
+                            _editTask(task);
+                          }
+
+                          if (value == 'delete') {
+                            _deleteTask(task);
+                          }
                         },
                         itemBuilder: (ctx) => [
                           const PopupMenuItem(
@@ -1072,6 +1749,7 @@ class TodoScreenState extends State<TodoScreen> {
                   ],
                 ),
               ),
+
               if (i != tasks.length - 1)
                 const Divider(height: 1, color: Color(0xFFECEFFC)),
             ],
@@ -1081,9 +1759,17 @@ class TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  // --------------------------------------------------
+  // REPEAT LABEL
+  // --------------------------------------------------
+
   String _repeatLabel(List<int> days) {
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    if (days.length == 7) return 'Every day';
+
+    if (days.length == 7) {
+      return 'Every day';
+    }
+
     return days.map((d) => dayLabels[d - 1]).join(', ');
   }
 }
