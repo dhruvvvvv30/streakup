@@ -46,8 +46,11 @@ class WidgetService {
       'pending_toggles',
       defaultValue: '[]',
     );
+
     try {
-      return (jsonDecode(raw ?? '[]') as List).map((e) => e.toString()).toList();
+      return (jsonDecode(raw ?? '[]') as List)
+          .map((e) => e.toString())
+          .toList();
     } catch (_) {
       return [];
     }
@@ -58,8 +61,11 @@ class WidgetService {
       'today_tasks',
       defaultValue: '[]',
     );
+
     try {
-      final list = (jsonDecode(raw ?? '[]') as List).cast<Map<String, dynamic>>();
+      final list = (jsonDecode(raw ?? '[]') as List)
+          .cast<Map<String, dynamic>>();
+
       return {
         for (final t in list) t['id'].toString(): (t['done'] as bool? ?? false),
       };
@@ -69,8 +75,13 @@ class WidgetService {
   }
 
   static Future<void> _clearPending(String taskId) async {
-    final pending = await _readPending()..remove(taskId);
-    await HomeWidget.saveWidgetData<String>('pending_toggles', jsonEncode(pending));
+    final pending = await _readPending()
+      ..remove(taskId);
+
+    await HomeWidget.saveWidgetData<String>(
+      'pending_toggles',
+      jsonEncode(pending),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -80,14 +91,29 @@ class WidgetService {
     required int streakCount,
     required List<Map<String, dynamic>> todayTasks,
   }) async {
+    // HomeWidget is not available on Flutter Web.
+    if (kIsWeb) {
+      return;
+    }
+
     await HomeWidget.saveWidgetData<int>('streak_count', streakCount);
-    await HomeWidget.saveWidgetData<String>('today_tasks', jsonEncode(todayTasks));
-    await HomeWidget.saveWidgetData<String>('data_date', _dateOnly(DateTime.now()));
+
+    await HomeWidget.saveWidgetData<String>(
+      'today_tasks',
+      jsonEncode(todayTasks),
+    );
+
+    await HomeWidget.saveWidgetData<String>(
+      'data_date',
+      _dateOnly(DateTime.now()),
+    );
+
     // Stored as a String on purpose: Kotlin reads it back as a Long.
     await HomeWidget.saveWidgetData<String>(
       'last_refresh',
       DateTime.now().millisecondsSinceEpoch.toString(),
     );
+
     // last_refresh must be saved BEFORE this call, or onUpdate would loop.
     await HomeWidget.updateWidget(androidName: _androidName);
   }
@@ -95,27 +121,46 @@ class WidgetService {
   /// Fetches streak + tasks using the SAME rules as the To-Do screen.
   /// Call after any task change: create, edit, delete, toggle.
   static Future<void> refreshFromServer() async {
+    // HomeWidget is not available on Flutter Web.
+    if (kIsWeb) {
+      return;
+    }
+
     try {
       if (!await _ensureSupabase()) return;
+
       final client = Supabase.instance.client;
       final userId = client.auth.currentUser?.id;
+
       if (userId == null) return;
 
       final now = DateTime.now();
-      final todayStartUtc =
-      DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
-      final cutoff =
-      now.toUtc().subtract(const Duration(hours: 24)).toIso8601String();
+
+      final todayStartUtc = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).toUtc().toIso8601String();
+
+      final cutoff = now
+          .toUtc()
+          .subtract(const Duration(hours: 24))
+          .toIso8601String();
 
       // ---- Streak (consecutive days ending today) ----
-      final dayRows =
-      await client.from('streak_days').select('day').eq('user_id', userId);
+      final dayRows = await client
+          .from('streak_days')
+          .select('day')
+          .eq('user_id', userId);
+
       final daySet = (dayRows as List).map((r) {
         final d = DateTime.parse(r['day'] as String);
         return DateTime(d.year, d.month, d.day);
       }).toSet();
+
       var streak = 0;
       var cursor = DateTime(now.year, now.month, now.day);
+
       while (daySet.contains(cursor)) {
         streak++;
         cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
@@ -134,30 +179,41 @@ class WidgetService {
           .select('task_id')
           .eq('user_id', userId)
           .gte('completed_at', todayStartUtc);
-      final doneToday =
-      (events as List).map((e) => e['task_id'].toString()).toSet();
+
+      final doneToday = (events as List)
+          .map((e) => e['task_id'].toString())
+          .toSet();
 
       // Keep taps that haven't reached Supabase yet
       final pending = await _readPending();
       final local = await _readLocalTasks();
 
       final tasks = <Map<String, dynamic>>[];
+
       for (final r in (rows as List)) {
         final id = r['id'].toString();
+
         final repeats = r['repeats'] as bool? ?? false;
+
         final repeatDays =
             (r['repeat_days'] as List?)?.map((e) => e as int).toList() ??
-                <int>[];
+            <int>[];
+
         final createdAt = DateTime.parse(r['created_at'] as String);
 
         final expired = !repeats && now.difference(createdAt).inHours >= 24;
+
         final dueToday = !repeats || repeatDays.contains(now.weekday);
+
         if (expired || !dueToday) continue;
 
         var done = repeats
-            ? doneToday.contains(id) // repeating tasks reset every day
+            ? doneToday.contains(id)
             : (r['completed'] as bool? ?? false);
-        if (pending.contains(id) && local.containsKey(id)) done = local[id]!;
+
+        if (pending.contains(id) && local.containsKey(id)) {
+          done = local[id]!;
+        }
 
         tasks.add({
           'id': id,
@@ -175,21 +231,32 @@ class WidgetService {
   // ---------------------------------------------------------------------------
   // Widget tap -> Supabase (full logic: XP, events, streak_days)
   // ---------------------------------------------------------------------------
-  static Future<void> registerBackgroundCallback() async {
+  static Future<void> registerBackgroundCallBack() async {
+    // HomeWidget interactivity callbacks are not supported on Flutter Web.
+    if (kIsWeb) {
+      return;
+    }
+
     await HomeWidget.registerInteractivityCallback(backgroundCallback);
   }
 
   static Future<void> _syncSingleToggle(String taskId) async {
     try {
       final local = await _readLocalTasks();
+
       if (!local.containsKey(taskId)) {
-        await _clearPending(taskId); // task no longer exists
+        await _clearPending(taskId);
         return;
       }
+
       if (!await _ensureSupabase()) return;
-      if (Supabase.instance.client.auth.currentUser == null) return; // retry later
+
+      if (Supabase.instance.client.auth.currentUser == null) {
+        return;
+      }
 
       await StreakService().toggleTaskCompletion(taskId, local[taskId]!);
+
       await _clearPending(taskId);
     } catch (e) {
       debugPrint('[Widget] toggle sync failed (will retry on resume): $e');
@@ -197,7 +264,13 @@ class WidgetService {
   }
 
   static Future<void> syncPendingToggles() async {
+    // HomeWidget is not available on Flutter Web.
+    if (kIsWeb) {
+      return;
+    }
+
     final pending = await _readPending();
+
     for (final id in pending) {
       await _syncSingleToggle(id);
     }
@@ -205,6 +278,11 @@ class WidgetService {
 
   /// Call on app start and whenever the app returns to the foreground.
   static Future<void> onAppResumed() async {
+    // HomeWidget is not available on Flutter Web.
+    if (kIsWeb) {
+      return;
+    }
+
     await syncPendingToggles();
     await refreshFromServer();
     dataVersion.value++;
@@ -216,9 +294,13 @@ class WidgetService {
 Future<void> backgroundCallback(Uri? uri) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+
   if (uri?.host == 'toggle') {
     final taskId = uri!.queryParameters['taskId'];
-    if (taskId != null) await WidgetService._syncSingleToggle(taskId);
+
+    if (taskId != null) {
+      await WidgetService._syncSingleToggle(taskId);
+    }
   } else if (uri?.host == 'refresh') {
     await WidgetService.refreshFromServer();
   }

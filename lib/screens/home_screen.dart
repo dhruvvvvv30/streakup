@@ -5,11 +5,14 @@ import 'streak_progress_screen.dart';
 import '../service/home_service.dart';
 import '../service/profile_store.dart';
 import '../service/app_events.dart';
+import '../service/journal_service.dart';
+import '../service/ai_service.dart';
 import '../shared_widgets.dart' hide AppColors;
 
 class FlameLogo extends StatelessWidget {
   final double size;
   final String assetPath;
+
   const FlameLogo({
     super.key,
     this.size = 76.0,
@@ -44,45 +47,75 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _homeService = HomeService();
-
   final _profileStore = ProfileStore.instance;
+
+  final _journalService = JournalService();
 
   HomeData? _data;
   bool _loading = true;
+
+  String? _aiMood;
+  bool _loadingAiMood = false;
 
   @override
   void initState() {
     super.initState();
 
     AppEvents.tasks.addListener(_sharedDataChanged);
-    AppEvents.journal.addListener(_sharedDataChanged);
+    AppEvents.journal.addListener(_journalChanged);
     AppEvents.progress.addListener(_sharedDataChanged);
 
     _profileStore.addListener(_profileChanged);
 
     _load();
+    _loadAiMood();
   }
 
   @override
   void dispose() {
     AppEvents.tasks.removeListener(_sharedDataChanged);
-    AppEvents.journal.removeListener(_sharedDataChanged);
+    AppEvents.journal.removeListener(_journalChanged);
     AppEvents.progress.removeListener(_sharedDataChanged);
+
     _profileStore.removeListener(_profileChanged);
 
     super.dispose();
   }
 
+  // --------------------------------------------------
+  // SHARED DATA
+  // --------------------------------------------------
+
   void _sharedDataChanged() {
     if (!mounted) return;
+
     _load();
   }
+
+  // --------------------------------------------------
+  // JOURNAL CHANGED
+  // --------------------------------------------------
+
+  void _journalChanged() {
+    if (!mounted) return;
+
+    _load();
+    _loadAiMood();
+  }
+
+  // --------------------------------------------------
+  // PROFILE CHANGED
+  // --------------------------------------------------
 
   void _profileChanged() {
     if (mounted) {
       setState(() {});
     }
   }
+
+  // --------------------------------------------------
+  // LOAD HOME DATA
+  // --------------------------------------------------
 
   Future<void> _load() async {
     if (mounted && _data == null) {
@@ -112,6 +145,61 @@ class _HomeScreenState extends State<HomeScreen> {
       ).showSnackBar(SnackBar(content: Text('Failed to load home data: $e')));
     }
   }
+
+  // --------------------------------------------------
+  // AI MOOD
+  // --------------------------------------------------
+
+  Future<void> _loadAiMood() async {
+    if (_loadingAiMood) return;
+
+    setState(() {
+      _loadingAiMood = true;
+    });
+
+    try {
+      final entries = await _journalService.fetchAllEntries();
+
+      final journals = entries
+          .map((entry) => entry.entryText.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
+
+      if (journals.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _aiMood = null;
+            _loadingAiMood = false;
+          });
+        }
+
+        return;
+      }
+
+      final mood = await AIService.getMood(journals);
+
+      if (!mounted) return;
+
+      setState(() {
+        _aiMood = mood;
+        _loadingAiMood = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loadingAiMood = false;
+      });
+
+      // AI mood is non-critical.
+      // The rest of the Home screen continues working normally.
+      print('AI mood error: $e');
+    }
+  }
+
+  // --------------------------------------------------
+  // BUILD
+  // --------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +232,10 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
         return RefreshIndicator(
-          onRefresh: _load,
+          onRefresh: () async {
+            await _load();
+            await _loadAiMood();
+          },
           color: AppColors.purple,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -153,15 +244,36 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const AppTopBar(showMenu: true),
+
                 const SizedBox(height: 16),
 
-                Text('Hi, ${data.fullName}', style: AppText.headline(size: 28)),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hi, ${data.fullName}',
+                            style: AppText.headline(size: 28),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Let's make today amazing!",
+                            style: AppText.body(
+                              size: 14,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                const SizedBox(height: 2),
+                    const SizedBox(width: 12),
 
-                Text(
-                  "Let's make today amazing!",
-                  style: AppText.body(size: 14, weight: FontWeight.w700),
+                    _buildAiMoodCard(),
+                  ],
                 ),
 
                 const SizedBox(height: 20),
@@ -204,6 +316,45 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+
+  // --------------------------------------------------
+  // AI MOOD CARD
+  // --------------------------------------------------
+
+  Widget _buildAiMoodCard() {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.purple.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: _loadingAiMood
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.purple,
+                ),
+              )
+            : Text(_aiMood ?? '😐', style: const TextStyle(fontSize: 29)),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // STREAK CARD
+  // --------------------------------------------------
 
   Widget _buildStreakCard(HomeData data) {
     return Container(
@@ -277,6 +428,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // --------------------------------------------------
+  // TODAY PROGRESS
+  // --------------------------------------------------
 
   Widget _buildTodayProgressCard(HomeData data) {
     final now = DateTime.now();
@@ -381,6 +536,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // --------------------------------------------------
+  // UPCOMING TASK
+  // --------------------------------------------------
+
   Widget _buildUpcomingTaskCard(HomeData data) {
     final hasTask = data.upcomingTaskTitle != null;
 
@@ -465,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   )
                 : Text(
-                    'No pending tasks ? nice work! ?',
+                    'No pending tasks — nice work! 🎉',
                     style: AppText.body(
                       size: 13,
                       weight: FontWeight.w700,
@@ -477,6 +636,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // --------------------------------------------------
+  // WEEKLY TRACKER
+  // --------------------------------------------------
 
   Widget _buildWeeklyTrackerRow(HomeData data) {
     final today = DateTime.now();
@@ -520,6 +683,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }),
     );
   }
+
+  // --------------------------------------------------
+  // DAY CAPSULE
+  // --------------------------------------------------
 
   Widget _buildDayCapsule(
     String day,
@@ -579,6 +746,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // --------------------------------------------------
+  // MONTH NAME
+  // --------------------------------------------------
 
   String _monthName(int month) {
     const names = [

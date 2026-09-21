@@ -15,7 +15,7 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  await WidgetService.registerBackgroundCallback();
+  await WidgetService.registerBackgroundCallBack();
   await WidgetService.syncPendingToggles(); // catch up on anything missed while closed
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -46,11 +46,7 @@ Future<void> main() async {
     await ProfileStore.instance.load();
   }
 
-  runApp(
-    AppLifecycleObserver(
-      child: const MyApp(),
-    ),
-  );
+  runApp(AppLifecycleObserver(child: const MyApp()));
 }
 
 final supabase = Supabase.instance.client;
